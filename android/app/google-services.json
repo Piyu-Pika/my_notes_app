@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "928351569541",
+    "firebase_url": "https://qwerty-24d1c-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "qwerty-24d1c",
+    "storage_bucket": "qwerty-24d1c.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:928351569541:android:b4687b4ba4b9bf8db50bec",
+        "android_client_info": {
+          "package_name": "com.piyush.piyush"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB6jLkZyFNJT8yEnRDPllt0AnctW5htqlc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
