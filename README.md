@@ -10,8 +10,14 @@ A simple note-taking application created using Flutter and Firebase.
 - Separate section for optional links in each note
 
 ## Screenshots
+![IMG-20240623-WA0002](https://github.com/Piyu-Pika/my_notes_app/assets/162677885/30082721-a953-4734-b319-0d0e46c326bb)
+![IMG-20240623-WA0004](https://github.com/Piyu-Pika/my_notes_app/assets/162677885/1cc5804a-ba34-49a9-bc5f-d5450b0d44f7)
+![IMG-20240623-WA0001](https://github.com/Piyu-Pika/my_notes_app/assets/162677885/a87d48b4-2a25-4869-9467-cef4a250275a)
 
-[Add screenshots here]
+
+![IMG-20240623-WA0005](https://github.com/Piyu-Pika/my_notes_app/assets/162677885/485fc653-e2e5-473f-9043-f0dd8640c36c)
+
+![IMG-20240623-WA0003](https://github.com/Piyu-Pika/my_notes_app/assets/162677885/080b5bfb-9bb9-4fc6-8461-baef6145b360)
 
 ## Technologies Used
 
