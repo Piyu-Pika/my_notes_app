@@ -37,6 +37,7 @@ class AuthWrapper extends StatelessWidget {
           if (user == null) {
             return Homescreen();
           }
+
           return NotesScreen();
         }
         return const Scaffold(body: Center(child: CircularProgressIndicator()));

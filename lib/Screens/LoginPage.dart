@@ -23,7 +23,7 @@ class _LoginPageState extends State<LoginPage> {
           password: _passwordController.text,
         );
         setState(() {
-          Navigator.push(
+          Navigator.pushReplacement(
               context, MaterialPageRoute(builder: (context) => NotesScreen()));
         });
       } on FirebaseAuthException catch (e) {
