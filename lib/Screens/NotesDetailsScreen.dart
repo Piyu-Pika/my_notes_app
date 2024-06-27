@@ -36,19 +36,31 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
   }
 
   Future<void> _launchUrl(String url) async {
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      url = 'https://' + url;
+    }
+
     final Uri uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } else {
+    try {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(
+          uri,
+          mode: LaunchMode.externalApplication,
+        );
+      } else {
+        throw 'Could not launch $url';
+      }
+    } catch (e) {
+      print('Error launching URL: $e');
       showDialog(
         context: context,
         builder: (BuildContext context) {
           return AlertDialog(
-            title: const Text('Could not launch URL'),
-            content: Text('Could not launch $url'),
+            title: Text('Error'),
+            content: Text('Could not launch $url\nError: $e'),
             actions: <Widget>[
               TextButton(
-                child: const Text('OK'),
+                child: Text('OK'),
                 onPressed: () {
                   Navigator.of(context).pop();
                 },
