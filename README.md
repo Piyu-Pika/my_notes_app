@@ -8,7 +8,8 @@ A simple note-taking application created using Flutter and Firebase.
 - 🔗 Separate section for optional links in each note
 
 ## 📸 Screenshots
-[Your existing screenshot links would go here]
+![NOTES_APP](https://github.com/user-attachments/assets/23527d33-b0b3-446f-81bb-3f6cd183814c)
+
 
 ## 🛠️ Technologies Used
 - 📱 Flutter
