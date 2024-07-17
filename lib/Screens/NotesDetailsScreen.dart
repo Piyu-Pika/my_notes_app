@@ -89,7 +89,7 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(widget.note['content'] ?? 'No content',
+            SelectableText(widget.note['content'] ?? 'No content',
                 style: Theme.of(context).textTheme.bodyLarge),
             const SizedBox(height: 20),
             if (widget.note['link'] != null && widget.note['link'].isNotEmpty)
@@ -184,7 +184,7 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
         const SnackBar(content: Text('Note updated successfully')),
       );
     }).catchError((error) {
-      Navigator.of(context).pop(); // Close the dialog
+      Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to update note: $error')),
       );
@@ -209,6 +209,7 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
               child: const Text("Delete"),
               onPressed: () {
                 Navigator.of(context).pop();
+                Navigator.of(context).pop();
                 _performDelete(context);
               },
             ),
@@ -227,6 +228,7 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
         .doc(widget.noteId)
         .delete()
         .then((_) {
+      Navigator.pop(context);
       Navigator.pop(context);
     }).catchError((error) {
       ScaffoldMessenger.of(context).showSnackBar(
