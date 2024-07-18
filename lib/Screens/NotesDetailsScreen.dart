@@ -67,28 +67,26 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SelectableText(widget.note['content'] ?? 'No content',
-                  style: Theme.of(context).textTheme.bodyLarge),
-              const SizedBox(height: 20),
-              if (widget.note['link'] != null && widget.note['link'].isNotEmpty)
-                GestureDetector(
-                  child: Text('Link: ${widget.note['link']}',
-                      style: const TextStyle(color: Colors.blue)),
-                  onTap: () {
-                    _launchUrl(widget.note['link']);
-                  },
-                ),
-              const SizedBox(height: 20),
-              Text(
-                'Created: ${widget.note['timestamp'] != null ? DateFormat.yMd().add_jm().format(widget.note['timestamp'].toDate()) : 'No Date'}',
-                style: Theme.of(context).textTheme.bodySmall,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SelectableText(widget.note['content'] ?? 'No content',
+                style: Theme.of(context).textTheme.bodyLarge),
+            const SizedBox(height: 20),
+            if (widget.note['link'] != null && widget.note['link'].isNotEmpty)
+              GestureDetector(
+                child: Text('Link: ${widget.note['link']}',
+                    style: const TextStyle(color: Colors.blue)),
+                onTap: () {
+                  _launchUrl(widget.note['link']);
+                },
               ),
-            ],
-          ),
+            const SizedBox(height: 20),
+            Text(
+              'Created: ${widget.note['timestamp'] != null ? DateFormat.yMd().add_jm().format(widget.note['timestamp'].toDate()) : 'No Date'}',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
         ),
       ),
       floatingActionButton: FloatingActionButton(
@@ -134,7 +132,6 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
             TextButton(
               child: const Text("Delete"),
               onPressed: () {
-                Navigator.of(context).pop();
                 Navigator.of(context).pop();
                 _performDelete(context);
               },
