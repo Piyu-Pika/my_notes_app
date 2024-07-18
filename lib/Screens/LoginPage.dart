@@ -14,18 +14,17 @@ class _LoginPageState extends State<LoginPage> {
   final _auth = FirebaseAuth.instance;
 
   String? _errorMessage;
+  bool _obscurePassword = true;
 
   Future<void> _login() async {
     if (_formKey.currentState!.validate()) {
       try {
         await _auth.signInWithEmailAndPassword(
-          email: _emailController.text,
-          password: _passwordController.text,
+          email: _emailController.text.trim(),
+          password: _passwordController.text.trim(),
         );
-        setState(() {
-          Navigator.pushReplacement(
-              context, MaterialPageRoute(builder: (context) => NotesScreen()));
-        });
+        Navigator.pushReplacement(
+            context, MaterialPageRoute(builder: (context) => NotesScreen()));
       } on FirebaseAuthException catch (e) {
         setState(() {
           _errorMessage = e.message;
@@ -57,8 +56,22 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 TextFormField(
                   controller: _passwordController,
-                  decoration: const InputDecoration(labelText: 'Password'),
-                  obscureText: true,
+                  decoration: InputDecoration(
+                    labelText: 'Password',
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword
+                            ? Icons.visibility_off
+                            : Icons.visibility,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _obscurePassword = !_obscurePassword;
+                        });
+                      },
+                    ),
+                  ),
+                  obscureText: _obscurePassword,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Please enter your password';
