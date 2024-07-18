@@ -52,8 +52,10 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
               onSaved: (value) => _title = value!,
             ),
             TextFormField(
-              decoration: const InputDecoration(labelText: 'Content'),
-              maxLines: 9,
+              decoration: const InputDecoration(
+                labelText: 'Content',
+              ),
+              maxLines: 15,
               validator: (value) =>
                   value!.isEmpty ? 'Please enter some content' : null,
               onSaved: (value) => _content = value!,

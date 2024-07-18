@@ -17,10 +17,7 @@ import 'package:flutter/foundation.dart'
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
-      throw UnsupportedError(
-        'DefaultFirebaseOptions have not been configured for web - '
-        'you can reconfigure this by running the FlutterFire CLI again.',
-      );
+      return web;
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
@@ -54,10 +51,21 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyB6jLkZyFNJT8yEnRDPllt0AnctW5htqlc',
-    appId: '1:928351569541:android:b4687b4ba4b9bf8db50bec',
+    appId: '1:928351569541:android:8b4c79b4895ff14cb50bec',
     messagingSenderId: '928351569541',
     projectId: 'qwerty-24d1c',
     databaseURL: 'https://qwerty-24d1c-default-rtdb.asia-southeast1.firebasedatabase.app',
     storageBucket: 'qwerty-24d1c.appspot.com',
   );
+
+  static const FirebaseOptions web = FirebaseOptions(
+    apiKey: 'AIzaSyA-h-zz0Sp4QDKMv9e14KO2V8CcUrJ7NTY',
+    appId: '1:928351569541:web:6cae3fea2fa4ecb8b50bec',
+    messagingSenderId: '928351569541',
+    projectId: 'qwerty-24d1c',
+    authDomain: 'qwerty-24d1c.firebaseapp.com',
+    databaseURL: 'https://qwerty-24d1c-default-rtdb.asia-southeast1.firebasedatabase.app',
+    storageBucket: 'qwerty-24d1c.appspot.com',
+  );
+
 }

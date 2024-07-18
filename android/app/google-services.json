@@ -10,6 +10,25 @@
       "client_info": {
         "mobilesdk_app_id": "1:928351569541:android:b4687b4ba4b9bf8db50bec",
         "android_client_info": {
+          "package_name": "com.piyush"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB6jLkZyFNJT8yEnRDPllt0AnctW5htqlc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:928351569541:android:8b4c79b4895ff14cb50bec",
+        "android_client_info": {
           "package_name": "com.piyush.piyush"
         }
       },

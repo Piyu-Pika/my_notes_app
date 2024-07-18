@@ -161,6 +161,15 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
   }
 
   void _performEdit(BuildContext context) {
+    // Validate title and content
+    if (_titleController.text.trim().isEmpty ||
+        _contentController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Title and Content cannot be empty')),
+      );
+      return;
+    }
+
     final user = FirebaseAuth.instance.currentUser!;
     FirebaseFirestore.instance
         .collection('users')
@@ -168,16 +177,16 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
         .collection('notes')
         .doc(widget.noteId)
         .update({
-      'title': _titleController.text,
-      'content': _contentController.text,
-      'link': _linkController.text,
+      'title': _titleController.text.trim(),
+      'content': _contentController.text.trim(),
+      'link': _linkController.text.trim(),
       'timestamp': FieldValue.serverTimestamp(),
     }).then((_) {
       Navigator.of(context).pop(); // Close the dialog
       setState(() {
-        widget.note['title'] = _titleController.text;
-        widget.note['content'] = _contentController.text;
-        widget.note['link'] = _linkController.text;
+        widget.note['title'] = _titleController.text.trim();
+        widget.note['content'] = _contentController.text.trim();
+        widget.note['link'] = _linkController.text.trim();
         widget.note['timestamp'] = Timestamp.now();
       });
       ScaffoldMessenger.of(context).showSnackBar(

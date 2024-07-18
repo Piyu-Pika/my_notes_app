@@ -11,37 +11,27 @@ class NotesScreen extends StatefulWidget {
 
 class _NotesScreenState extends State<NotesScreen> {
   String _searchQuery = '';
+  bool _isSearching = false;
 
-  void _showSearchDialog() {
+  void _showLogoutConfirmationDialog() {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Search Notes'),
-          content: TextField(
-            onChanged: (value) {
-              setState(() {
-                _searchQuery = value.toLowerCase();
-              });
-            },
-            decoration: const InputDecoration(
-              hintText: 'Enter search term...',
-            ),
-          ),
+          title: Text('Confirm Logout'),
+          content: Text('Are you sure you want to log out?'),
           actions: <Widget>[
             TextButton(
-              child: const Text('Cancel'),
+              child: Text('Cancel'),
               onPressed: () {
-                setState(() {
-                  _searchQuery = '';
-                });
                 Navigator.of(context).pop();
               },
             ),
             TextButton(
-              child: const Text('Search'),
+              child: Text('Logout'),
               onPressed: () {
                 Navigator.of(context).pop();
+                FirebaseAuth.instance.signOut();
               },
             ),
           ],
@@ -55,15 +45,37 @@ class _NotesScreenState extends State<NotesScreen> {
     final user = FirebaseAuth.instance.currentUser!;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Notes'),
+        title: _isSearching
+            ? TextField(
+                autofocus: true,
+                decoration: InputDecoration(
+                  hintText: 'Search notes...',
+                  border: InputBorder.none,
+                  hintStyle: TextStyle(color: Colors.white70),
+                ),
+                style: TextStyle(color: Colors.white),
+                onChanged: (value) {
+                  setState(() {
+                    _searchQuery = value.toLowerCase();
+                  });
+                },
+              )
+            : Text('Notes'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: _showSearchDialog,
+            icon: Icon(_isSearching ? Icons.close : Icons.search),
+            onPressed: () {
+              setState(() {
+                _isSearching = !_isSearching;
+                if (!_isSearching) {
+                  _searchQuery = '';
+                }
+              });
+            },
           ),
           IconButton(
             icon: const Icon(Icons.logout),
-            onPressed: () => FirebaseAuth.instance.signOut(),
+            onPressed: _showLogoutConfirmationDialog,
           ),
         ],
       ),
