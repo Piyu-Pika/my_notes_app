@@ -133,6 +133,7 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
               child: const Text("Delete"),
               onPressed: () {
                 Navigator.of(context).pop();
+                Navigator.of(context).pop();
                 _performDelete(context);
               },
             ),
