@@ -7,25 +7,66 @@ import 'package:my_notes_app/Screens/notesScreen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
-  runApp(const MyApp());
+  runApp(MyApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class MyApp extends StatefulWidget {
+  @override
+  _MyAppState createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  bool _isDarkMode = false;
+
+  void toggleTheme() {
+    setState(() {
+      _isDarkMode = !_isDarkMode;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Notes App',
-      theme: ThemeData.dark(),
-      home: const AuthWrapper(),
+      theme: _buildTheme(_isDarkMode),
+      home: AuthWrapper(toggleTheme: toggleTheme, isDarkMode: _isDarkMode),
       debugShowCheckedModeBanner: false,
+    );
+  }
+
+  ThemeData _buildTheme(bool isDarkMode) {
+    return ThemeData(
+      brightness: isDarkMode ? Brightness.dark : Brightness.light,
+      fontFamily: 'Roboto',
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: isDarkMode ? Colors.blueGrey[700] : Colors.blue[700],
+          padding: EdgeInsets.symmetric(horizontal: 50, vertical: 15),
+          textStyle: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(30),
+          ),
+        ),
+      ),
+      colorScheme: ColorScheme.fromSwatch(
+        primarySwatch: isDarkMode ? Colors.blueGrey : Colors.blue,
+        brightness: isDarkMode ? Brightness.dark : Brightness.light,
+      ).copyWith(
+          secondary: isDarkMode ? Colors.blueGrey[400] : Colors.blueAccent),
     );
   }
 }
 
 class AuthWrapper extends StatelessWidget {
-  const AuthWrapper({super.key});
+  final Function toggleTheme;
+  final bool isDarkMode;
+
+  const AuthWrapper(
+      {Key? key, required this.toggleTheme, required this.isDarkMode})
+      : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -38,7 +79,7 @@ class AuthWrapper extends StatelessWidget {
             return Homescreen();
           }
 
-          return NotesScreen();
+          return NotesScreen(toggleTheme: toggleTheme, isDarkMode: isDarkMode);
         }
         return const Scaffold(body: Center(child: CircularProgressIndicator()));
       },

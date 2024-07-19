@@ -16,6 +16,7 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
   late TextEditingController _titleController;
   late TextEditingController _contentController;
   late TextEditingController _linkController;
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -41,38 +42,73 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
         actions: [
           IconButton(
             icon: Icon(Icons.save),
-            onPressed: () => _saveNote(context),
+            onPressed: _isLoading ? null : () => _saveNote(context),
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              TextField(
-                controller: _titleController,
-                decoration: InputDecoration(labelText: 'Title'),
+      body: _isLoading
+          ? Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  children: [
+                    Card(
+                      elevation: 4,
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: TextField(
+                          controller: _titleController,
+                          decoration: InputDecoration(
+                            labelText: 'Title',
+                            border: InputBorder.none,
+                          ),
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 16),
+                    Card(
+                      elevation: 4,
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: TextField(
+                          controller: _contentController,
+                          decoration: InputDecoration(
+                            labelText: 'Content',
+                            border: InputBorder.none,
+                          ),
+                          maxLines: null,
+                          keyboardType: TextInputType.multiline,
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 16),
+                    Card(
+                      elevation: 4,
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: TextField(
+                          controller: _linkController,
+                          decoration: InputDecoration(
+                            labelText: 'Link',
+                            border: InputBorder.none,
+                            prefixIcon: Icon(Icons.link),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              SizedBox(height: 16),
-              TextField(
-                controller: _contentController,
-                decoration: InputDecoration(labelText: 'Content'),
-                maxLines: 10,
-              ),
-              SizedBox(height: 16),
-              TextField(
-                controller: _linkController,
-                decoration: InputDecoration(labelText: 'Link'),
-              ),
-            ],
-          ),
-        ),
-      ),
+            ),
     );
   }
 
-  void _saveNote(BuildContext context) {
+  void _saveNote(BuildContext context) async {
     if (_titleController.text.trim().isEmpty ||
         _contentController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -81,31 +117,42 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
       return;
     }
 
+    setState(() {
+      _isLoading = true;
+    });
+
     final user = FirebaseAuth.instance.currentUser!;
-    FirebaseFirestore.instance
-        .collection('users')
-        .doc(user.uid)
-        .collection('notes')
-        .doc(widget.noteId)
-        .update({
-      'title': _titleController.text.trim(),
-      'content': _contentController.text.trim(),
-      'link': _linkController.text.trim(),
-      'timestamp': FieldValue.serverTimestamp(),
-    }).then((_) {
+    try {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('notes')
+          .doc(widget.noteId)
+          .update({
+        'title': _titleController.text.trim(),
+        'content': _contentController.text.trim(),
+        'link': _linkController.text.trim(),
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+
       Navigator.pop(context, {
         'title': _titleController.text.trim(),
         'content': _contentController.text.trim(),
         'link': _linkController.text.trim(),
         'timestamp': Timestamp.now(),
       });
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Note updated successfully')),
       );
-    }).catchError((error) {
+    } catch (error) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to update note: $error')),
       );
-    });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 }

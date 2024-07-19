@@ -5,6 +5,11 @@ import 'package:my_notes_app/Screens/NoteAddScreen.dart';
 import 'package:my_notes_app/Screens/NotesDetailsScreen.dart';
 
 class NotesScreen extends StatefulWidget {
+  final Function toggleTheme;
+  final bool isDarkMode;
+
+  NotesScreen({required this.toggleTheme, required this.isDarkMode});
+
   @override
   _NotesScreenState createState() => _NotesScreenState();
 }
@@ -51,16 +56,16 @@ class _NotesScreenState extends State<NotesScreen> {
                 decoration: InputDecoration(
                   hintText: 'Search notes...',
                   border: InputBorder.none,
-                  hintStyle: TextStyle(color: Colors.white70),
+                  hintStyle: TextStyle(),
                 ),
-                style: TextStyle(color: Colors.white),
+                style: TextStyle(),
                 onChanged: (value) {
                   setState(() {
                     _searchQuery = value.toLowerCase();
                   });
                 },
               )
-            : Text('Notes'),
+            : Text('My Notes'),
         actions: [
           IconButton(
             icon: Icon(_isSearching ? Icons.close : Icons.search),
@@ -71,6 +76,12 @@ class _NotesScreenState extends State<NotesScreen> {
                   _searchQuery = '';
                 }
               });
+            },
+          ),
+          IconButton(
+            icon: Icon(widget.isDarkMode ? Icons.light_mode : Icons.dark_mode),
+            onPressed: () {
+              widget.toggleTheme();
             },
           ),
           IconButton(
@@ -87,16 +98,15 @@ class _NotesScreenState extends State<NotesScreen> {
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
-            return const Center(child: Text('Something went wrong'));
+            return Center(child: Text('Something went wrong'));
           }
 
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return Center(child: CircularProgressIndicator());
           }
 
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return const Center(
-                child: Text('No notes yet. Add your first note!'));
+            return Center(child: Text('No notes yet. Add your first note!'));
           }
 
           var filteredDocs = snapshot.data!.docs.where((doc) {
@@ -109,36 +119,53 @@ class _NotesScreenState extends State<NotesScreen> {
           }).toList();
 
           if (filteredDocs.isEmpty) {
-            return const Center(child: Text('No matching notes found'));
+            return Center(child: Text('No matching notes found'));
           }
 
-          return ListView(
-            children: filteredDocs.map((DocumentSnapshot document) {
+          return ListView.builder(
+            itemCount: filteredDocs.length,
+            itemBuilder: (context, index) {
               Map<String, dynamic> data =
-                  document.data()! as Map<String, dynamic>;
-              return ListTile(
-                title: Text(data['title'] ?? 'No Title'),
-                subtitle: Text(
-                  data['content'] ?? 'No Content',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) =>
-                          NoteDetailScreen(note: data, noteId: document.id),
+                  filteredDocs[index].data() as Map<String, dynamic>;
+              return Card(
+                elevation: 2,
+                margin: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                child: ListTile(
+                  title: Text(
+                    data['title'] ?? 'No Title',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text(
+                    data['content'] ?? 'No Content',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  leading: CircleAvatar(
+                    backgroundColor: Colors.blue,
+                    child: Text(
+                      (data['title'] ?? 'N')[0].toUpperCase(),
+                      style: TextStyle(color: Colors.white),
                     ),
-                  );
-                },
+                  ),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => NoteDetailScreen(
+                          note: data,
+                          noteId: filteredDocs[index].id,
+                        ),
+                      ),
+                    );
+                  },
+                ),
               );
-            }).toList(),
+            },
           );
         },
       ),
       floatingActionButton: FloatingActionButton(
-        child: const Icon(Icons.add),
+        child: Icon(Icons.add),
         onPressed: () {
           Navigator.push(
             context,

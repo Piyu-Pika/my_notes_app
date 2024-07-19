@@ -9,69 +9,153 @@ class AddNoteScreen extends StatefulWidget {
 
 class _AddNoteScreenState extends State<AddNoteScreen> {
   final _formKey = GlobalKey<FormState>();
-  String _title = '';
-  String _content = '';
-  String _link = '';
+  final _titleController = TextEditingController();
+  final _contentController = TextEditingController();
+  final _linkController = TextEditingController();
+  bool _isLoading = false;
 
-  void _submitForm() {
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _contentController.dispose();
+    _linkController.dispose();
+    super.dispose();
+  }
+
+  void _submitForm() async {
     if (_formKey.currentState!.validate()) {
-      _formKey.currentState!.save();
+      setState(() {
+        _isLoading = true;
+      });
+
       final user = FirebaseAuth.instance.currentUser!;
-      FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .collection('notes')
-          .add({
-        'title': _title,
-        'content': _content,
-        'link': _link,
-        'timestamp': FieldValue.serverTimestamp(),
-      }).then((_) {
+      try {
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .collection('notes')
+            .add({
+          'title': _titleController.text.trim(),
+          'content': _contentController.text.trim(),
+          'link': _linkController.text.trim(),
+          'timestamp': FieldValue.serverTimestamp(),
+        });
+
         Navigator.pop(context);
-      }).catchError((error) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Note added successfully')),
+        );
+      } catch (error) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to add note: $error')),
         );
-      });
+      } finally {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Add Note')),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(16.0),
-          children: [
-            TextFormField(
-              decoration: const InputDecoration(labelText: 'Title'),
-              validator: (value) =>
-                  value!.isEmpty ? 'Please enter a title' : null,
-              onSaved: (value) => _title = value!,
-            ),
-            TextFormField(
-              decoration: const InputDecoration(
-                labelText: 'Content',
-              ),
-              maxLines: 15,
-              validator: (value) =>
-                  value!.isEmpty ? 'Please enter some content' : null,
-              onSaved: (value) => _content = value!,
-            ),
-            TextFormField(
-              decoration: const InputDecoration(labelText: 'Link (optional)'),
-              onSaved: (value) => _link = value ?? '',
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _submitForm,
-              child: const Text('Save Note'),
-            ),
-          ],
-        ),
+      appBar: AppBar(
+        title: Text('Add Note'),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.save),
+            onPressed: _isLoading ? null : _submitForm,
+          ),
+        ],
       ),
+      body: _isLoading
+          ? Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    children: [
+                      Card(
+                        elevation: 4,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                          child: TextFormField(
+                            controller: _titleController,
+                            decoration: InputDecoration(
+                              labelText: 'Title',
+                              border: InputBorder.none,
+                            ),
+                            validator: (value) =>
+                                value!.isEmpty ? 'Please enter a title' : null,
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 16),
+                      Card(
+                        elevation: 4,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                          child: TextFormField(
+                            controller: _contentController,
+                            decoration: InputDecoration(
+                              labelText: 'Content',
+                              border: InputBorder.none,
+                            ),
+                            validator: (value) => value!.isEmpty
+                                ? 'Please enter some content'
+                                : null,
+                            maxLines: 15,
+                            keyboardType: TextInputType.multiline,
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 16),
+                      Card(
+                        elevation: 4,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                          child: TextFormField(
+                            controller: _linkController,
+                            decoration: InputDecoration(
+                              labelText: 'Link (optional)',
+                              border: InputBorder.none,
+                              prefixIcon: Icon(Icons.link),
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 20),
+                      ElevatedButton.icon(
+                        icon: Icon(
+                          Icons.save,
+                          color: Colors.black87,
+                        ),
+                        label: Text(
+                          'Save Note',
+                          style: TextStyle(color: Colors.black87),
+                        ),
+                        onPressed: _isLoading ? null : _submitForm,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Theme.of(context).primaryColor,
+                          padding: EdgeInsets.symmetric(
+                              horizontal: 40, vertical: 15),
+                          textStyle: TextStyle(
+                            fontSize: 18,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
     );
   }
 }

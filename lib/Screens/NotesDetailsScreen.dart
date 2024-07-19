@@ -33,24 +33,28 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
       }
     } catch (e) {
       print('Error launching URL: $e');
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: Text('Error'),
-            content: Text('Could not launch $url\nError: $e'),
-            actions: <Widget>[
-              TextButton(
-                child: Text('OK'),
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-              ),
-            ],
-          );
-        },
-      );
+      _showErrorDialog('Could not launch $url\nError: $e');
     }
+  }
+
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Error'),
+          content: Text(message),
+          actions: <Widget>[
+            TextButton(
+              child: Text('OK'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -60,38 +64,65 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
         title: Text(widget.note['title'] ?? 'Note Details'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.edit),
+            onPressed: () => _editNote(context),
+          ),
+          IconButton(
             icon: const Icon(Icons.delete),
             onPressed: () => _deleteNote(context),
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SelectableText(widget.note['content'] ?? 'No content',
-                style: Theme.of(context).textTheme.bodyLarge),
-            const SizedBox(height: 20),
-            if (widget.note['link'] != null && widget.note['link'].isNotEmpty)
-              GestureDetector(
-                child: Text('Link: ${widget.note['link']}',
-                    style: const TextStyle(color: Colors.blue)),
-                onTap: () {
-                  _launchUrl(widget.note['link']);
-                },
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Card(
+                elevation: 4,
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.note['title'] ?? 'No Title',
+                        style:
+                            Theme.of(context).textTheme.headlineSmall!.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                      ),
+                      SizedBox(height: 8),
+                      Text(
+                        'Created: ${widget.note['timestamp'] != null ? DateFormat.yMd().add_jm().format(widget.note['timestamp'].toDate()) : 'No Date'}',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                      Divider(height: 20),
+                      SelectableText(
+                        widget.note['content'] ?? 'No content',
+                        style: Theme.of(context).textTheme.bodyLarge,
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            const SizedBox(height: 20),
-            Text(
-              'Created: ${widget.note['timestamp'] != null ? DateFormat.yMd().add_jm().format(widget.note['timestamp'].toDate()) : 'No Date'}',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-          ],
+              SizedBox(height: 20),
+              if (widget.note['link'] != null && widget.note['link'].isNotEmpty)
+                Card(
+                  elevation: 4,
+                  child: ListTile(
+                    leading: Icon(Icons.link),
+                    title: Text('Attached Link'),
+                    subtitle: Text(widget.note['link']),
+                    onTap: () {
+                      _launchUrl(widget.note['link']);
+                    },
+                  ),
+                ),
+            ],
+          ),
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _editNote(context),
-        child: const Icon(Icons.edit),
       ),
     );
   }
@@ -153,6 +184,9 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
         .delete()
         .then((_) {
       Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Note deleted successfully')),
+      );
     }).catchError((error) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to delete note: $error')),
