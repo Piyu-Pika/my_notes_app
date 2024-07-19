@@ -10,7 +10,7 @@ A sleek and intuitive note-taking application created using Flutter and Firebase
 - 🔍 Search functionality to easily find notes
 
 ## 📸 Screenshots
-
+![ui_update](https://github.com/user-attachments/assets/3a0ade21-a683-4c3a-830a-cb76ad9c5f6a)
 
 ## 🛠️ Technologies Used
 - 📱 Flutter for cross-platform development
