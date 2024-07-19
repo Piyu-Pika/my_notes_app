@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:my_notes_app/Screens/SignUpPage.dart';
 import 'package:my_notes_app/Screens/notesScreen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -17,10 +18,26 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   bool _isDarkMode = false;
+  static const String THEME_KEY = 'isDarkMode';
 
-  void toggleTheme() {
+  @override
+  void initState() {
+    super.initState();
+    _loadTheme();
+  }
+
+  void _loadTheme() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _isDarkMode = prefs.getBool(THEME_KEY) ?? false;
+    });
+  }
+
+  void toggleTheme() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
       _isDarkMode = !_isDarkMode;
+      prefs.setBool(THEME_KEY, _isDarkMode);
     });
   }
 
@@ -35,28 +52,70 @@ class _MyAppState extends State<MyApp> {
   }
 
   ThemeData _buildTheme(bool isDarkMode) {
-    return ThemeData(
-      brightness: isDarkMode ? Brightness.dark : Brightness.light,
-      fontFamily: 'Roboto',
-      elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: isDarkMode ? Colors.blueGrey[700] : Colors.blue[700],
-          padding: EdgeInsets.symmetric(horizontal: 50, vertical: 15),
-          textStyle: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(30),
+    if (isDarkMode) {
+      return ThemeData(
+        brightness: Brightness.dark,
+        primaryColor: Color(0xFF1F1F1F),
+        scaffoldBackgroundColor: Color(0xFF121212),
+        appBarTheme: AppBarTheme(
+          backgroundColor: Color(0xFF1F1F1F),
+          elevation: 0,
+        ),
+        cardColor: Color(0xFF2C2C2C),
+        textTheme: TextTheme(
+          bodyLarge: TextStyle(color: Colors.white),
+          bodyMedium: TextStyle(color: Colors.white70),
+        ),
+        iconTheme: IconThemeData(color: Colors.white),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Color(0xFF3D5AFE),
+            foregroundColor: Colors.white,
+            padding: EdgeInsets.symmetric(horizontal: 50, vertical: 15),
+            textStyle: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(30),
+            ),
           ),
         ),
-      ),
-      colorScheme: ColorScheme.fromSwatch(
-        primarySwatch: isDarkMode ? Colors.blueGrey : Colors.blue,
-        brightness: isDarkMode ? Brightness.dark : Brightness.light,
-      ).copyWith(
-          secondary: isDarkMode ? Colors.blueGrey[400] : Colors.blueAccent),
-    );
+        colorScheme: ColorScheme.dark(
+          primary: Color(0xFF3D5AFE),
+          secondary: Color(0xFF64FFDA),
+          surface: Color(0xFF2C2C2C),
+          background: Color(0xFF121212),
+          error: Color(0xFFCF6679),
+        ),
+        floatingActionButtonTheme: FloatingActionButtonThemeData(
+          backgroundColor: Color(0xFF3D5AFE),
+          foregroundColor: Colors.white,
+        ),
+      );
+    } else {
+      return ThemeData(
+        brightness: Brightness.light,
+        fontFamily: 'Roboto',
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.blue[700],
+            padding: EdgeInsets.symmetric(horizontal: 50, vertical: 15),
+            textStyle: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(30),
+            ),
+          ),
+        ),
+        colorScheme: ColorScheme.fromSwatch(
+          primarySwatch: Colors.blue,
+          brightness: Brightness.light,
+        ).copyWith(secondary: Colors.blueAccent),
+      );
+    }
   }
 }
 

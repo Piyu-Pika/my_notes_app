@@ -59,6 +59,8 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Add Note'),
@@ -135,11 +137,13 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
                       ElevatedButton.icon(
                         icon: Icon(
                           Icons.save,
-                          color: Colors.black87,
+                          color: isDarkMode ? Colors.white : Colors.black87,
                         ),
                         label: Text(
                           'Save Note',
-                          style: TextStyle(color: Colors.black87),
+                          style: TextStyle(
+                            color: isDarkMode ? Colors.white : Colors.black87,
+                          ),
                         ),
                         onPressed: _isLoading ? null : _submitForm,
                         style: ElevatedButton.styleFrom(
