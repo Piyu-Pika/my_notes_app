@@ -182,7 +182,7 @@ class _HomescreenState extends State<Homescreen> {
                           SizedBox(height: 16),
                           GestureDetector(
                             onTap: () {
-                              Navigator.push(
+                              Navigator.pushReplacement(
                                 context,
                                 MaterialPageRoute(
                                     builder: (context) => LoginPage()),

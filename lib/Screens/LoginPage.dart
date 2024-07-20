@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:my_notes_app/Screens/SignUpPage.dart';
 import 'package:my_notes_app/Screens/notesScreen.dart';
 
 class LoginPage extends StatefulWidget {
@@ -158,7 +159,8 @@ class _LoginPageState extends State<LoginPage> {
                           SizedBox(height: 16),
                           GestureDetector(
                             onTap: () {
-                              Navigator.pop(context);
+                              MaterialPageRoute(
+                                    builder: (context) => Homescreen());
                             },
                             child: Text(
                               'Don\'t have an account? Sign Up',

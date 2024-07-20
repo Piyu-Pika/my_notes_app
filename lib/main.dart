@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_gemini/flutter_gemini.dart';
 import 'package:my_notes_app/Screens/SignUpPage.dart';
 import 'package:my_notes_app/Screens/notesScreen.dart';
+import 'package:my_notes_app/key.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+  Gemini.init(apiKey: apikey);
   runApp(MyApp());
 }
 

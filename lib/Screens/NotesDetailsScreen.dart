@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
+import 'package:my_notes_app/Screens/ChatWithNotes.dart';
 import 'package:my_notes_app/Screens/NoteEditScreen.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -122,6 +123,23 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
                 ),
             ],
           ),
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _navigateToChatScreen(context),
+        child: Icon(Icons.chat),
+        tooltip: 'Chat with this note',
+      ),
+    );
+  }
+
+  void _navigateToChatScreen(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => NoteChatScreen(
+          noteContent: widget.note['content'],
+          noteTitle: widget.note['title'],
         ),
       ),
     );

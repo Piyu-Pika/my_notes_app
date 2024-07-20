@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_gemini/flutter_gemini.dart';
 
 class AddNoteScreen extends StatefulWidget {
   @override
@@ -13,6 +14,7 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
   final _contentController = TextEditingController();
   final _linkController = TextEditingController();
   bool _isLoading = false;
+  final gemini = Gemini.instance;
 
   @override
   void dispose() {
@@ -20,6 +22,51 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
     _contentController.dispose();
     _linkController.dispose();
     super.dispose();
+  }
+
+  Future<void> _generateTitle() async {
+    if (_contentController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Please enter some content first')),
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      String prompt = '''
+      Based on the following note content, generate a concise and relevant title:
+      ${_contentController.text}
+      
+      The title should be short, catchy, and representative of the main idea in the content.
+      under 50 charcters
+      ''';
+
+      final response = await gemini.text(prompt);
+      String generatedTitle =
+          response?.content?.parts?.last.text ?? 'Generated Title';
+
+      // Trim and limit the title length if necessary
+      generatedTitle = generatedTitle.trim();
+      if (generatedTitle.length > 50) {
+        generatedTitle = generatedTitle.substring(0, 47) + '...';
+      }
+
+      setState(() {
+        _titleController.text = generatedTitle;
+      });
+    } catch (error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to generate title: $error')),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   void _submitForm() async {
@@ -89,6 +136,11 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
                             decoration: InputDecoration(
                               labelText: 'Title',
                               border: InputBorder.none,
+                              suffixIcon: IconButton(
+                                icon: Icon(Icons.auto_awesome_rounded),
+                                onPressed: _generateTitle,
+                                tooltip: 'Generate title',
+                              ),
                             ),
                             validator: (value) =>
                                 value!.isEmpty ? 'Please enter a title' : null,

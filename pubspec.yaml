@@ -43,6 +43,8 @@ dependencies:
   package_info_plus: ^8.0.0
   device_apps: ^2.2.0
   shared_preferences: ^2.2.3
+  google_generative_ai: ^0.4.3
+  flutter_gemini: ^2.0.4
 
 dev_dependencies:
   flutter_launcher_icons: "^0.13.1"
