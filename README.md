@@ -1,5 +1,5 @@
 # 📝 My Notes App
-A sleek and intuitive note-taking application created using Flutter and Firebase.
+A sleek and intuitive note-taking application created using Flutter and Firebase, now enhanced with AI features powered by Google Gemini!
 
 ## ✨ Enhanced Features
 - 🔐 Secure user authentication using Firebase Auth
@@ -8,6 +8,12 @@ A sleek and intuitive note-taking application created using Flutter and Firebase
 - 🔗 Dedicated section for optional links in each note
 - 🎨 Improved UI with gradient backgrounds and card layouts
 - 🔍 Search functionality to easily find notes
+- 🧠 AI-powered title generator for your notes
+- 💬 Chat with your notes using AI assistance
+
+## 🤖 New AI Features
+- **AI Title Generator**: Automatically generate catchy and relevant titles for your notes using Google Gemini AI
+- **Chat with Notes**: Engage in a conversation about your notes with an AI assistant, powered by Google Gemini
 
 ## 📸 Screenshots
 ![ui_update](https://github.com/user-attachments/assets/3a0ade21-a683-4c3a-830a-cb76ad9c5f6a)
@@ -16,6 +22,7 @@ A sleek and intuitive note-taking application created using Flutter and Firebase
 - 📱 Flutter for cross-platform development
 - 🔑 Firebase Authentication for secure user management
 - 🗄️ Firebase Firestore for real-time data storage
+- 🤖 Google Gemini for AI-powered features
 
 ## 🚀 Getting Started
 1. 📥 Clone the repository
@@ -25,16 +32,20 @@ A sleek and intuitive note-taking application created using Flutter and Firebase
    - Add your Flutter app to the Firebase project
    - Download and add the `google-services.json` file to the appropriate directory
    - Enable Authentication and Firestore in your Firebase console
-4. ▶️ Run the app using `flutter run`
+4. 🤖 Set up Google Gemini
+   - Obtain an API key for Google Gemini
+   - Add the API key to your project (ensure it's kept secure and not exposed in public repositories)
+5. ▶️ Run the app using `flutter run`
 
 ## 📖 Usage
 - 👤 Register or login with a sleek, user-friendly interface
 - ➕ Tap the floating action button to add a new note
 - ✏️ Fill in the title, content, and an optional link for your note
+- 🧠 Use the AI title generator to create a title based on your note content
 - 💾 Tap 'Save Note' to store your note
 - 🔍 Use the search functionality in the app bar to find specific notes
+- 💬 Chat with your notes to get AI-powered insights and answers
 - 🌓 Toggle between light and dark modes for comfortable viewing
-
 ## 🆕 New UI Enhancements
 - Gradient backgrounds for a modern look
 - Card-based layout for better organization
