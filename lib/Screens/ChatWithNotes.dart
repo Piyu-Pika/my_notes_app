@@ -52,6 +52,8 @@ class _NoteChatScreenState extends State<NoteChatScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Chat about: ${widget.noteTitle}'),
@@ -83,8 +85,15 @@ class _NoteChatScreenState extends State<NoteChatScreen> {
                             borderRadius: BorderRadius.circular(25.0),
                           ),
                           filled: true,
-                          fillColor: Colors.grey[200],
+                          fillColor:
+                              isDarkMode ? Colors.grey[800] : Colors.grey[200],
+                          hintStyle: TextStyle(
+                              color: isDarkMode
+                                  ? Colors.grey[400]
+                                  : Colors.grey[600]),
                         ),
+                        style: TextStyle(
+                            color: isDarkMode ? Colors.white : Colors.black),
                       ),
                     ),
                     IconButton(
@@ -111,6 +120,11 @@ class ChatMessage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final userBubbleColor = isDarkMode ? Colors.blue[700] : Colors.blue[100];
+    final aiBubbleColor = isDarkMode ? Colors.grey[700] : Colors.grey[300];
+    final textColor = isDarkMode ? Colors.white : Colors.black;
+
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 16.0),
       child: Row(
@@ -126,10 +140,13 @@ class ChatMessage extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(12.0),
                   decoration: BoxDecoration(
-                    color: isUser ? Colors.blue[100] : Colors.grey[300],
+                    color: isUser ? userBubbleColor : aiBubbleColor,
                     borderRadius: BorderRadius.circular(8.0),
                   ),
-                  child: Text(text),
+                  child: Text(
+                    text,
+                    style: TextStyle(color: textColor),
+                  ),
                 ),
               ],
             ),
