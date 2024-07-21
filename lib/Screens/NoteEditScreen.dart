@@ -17,6 +17,16 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
   late TextEditingController _contentController;
   late TextEditingController _linkController;
   bool _isLoading = false;
+  late Color _selectedColor;
+
+  final List<Color> _colorOptions = [
+    Colors.white,
+    Colors.red[100]!,
+    Colors.blue[100]!,
+    Colors.green[100]!,
+    Colors.yellow[100]!,
+    Colors.purple[100]!,
+  ];
 
   @override
   void initState() {
@@ -24,6 +34,7 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
     _titleController = TextEditingController(text: widget.note['title']);
     _contentController = TextEditingController(text: widget.note['content']);
     _linkController = TextEditingController(text: widget.note['link']);
+    _selectedColor = Color(widget.note['color'] ?? Colors.white.value);
   }
 
   @override
@@ -101,6 +112,52 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
                         ),
                       ),
                     ),
+                    SizedBox(height: 16),
+                    Card(
+                      elevation: 4,
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Note Color',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            SizedBox(height: 8),
+                            Wrap(
+                              spacing: 8,
+                              children: _colorOptions.map((Color color) {
+                                return GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      _selectedColor = color;
+                                    });
+                                  },
+                                  child: Container(
+                                    width: 40,
+                                    height: 40,
+                                    decoration: BoxDecoration(
+                                      color: color,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: _selectedColor == color
+                                            ? Colors.black
+                                            : Colors.grey,
+                                        width: 2,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -133,6 +190,7 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
         'content': _contentController.text.trim(),
         'link': _linkController.text.trim(),
         'timestamp': FieldValue.serverTimestamp(),
+        'color': _selectedColor.value,
       });
 
       Navigator.pop(context, {
@@ -140,6 +198,7 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
         'content': _contentController.text.trim(),
         'link': _linkController.text.trim(),
         'timestamp': Timestamp.now(),
+        'color': _selectedColor.value,
       });
 
       ScaffoldMessenger.of(context).showSnackBar(

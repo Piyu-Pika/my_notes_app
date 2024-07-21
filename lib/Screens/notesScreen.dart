@@ -45,6 +45,14 @@ class _NotesScreenState extends State<NotesScreen> {
     );
   }
 
+  Color getTextColor(Color backgroundColor) {
+    if (backgroundColor.computeLuminance() > 0.5) {
+      return Colors.black;
+    } else {
+      return Colors.white;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser!;
@@ -56,9 +64,12 @@ class _NotesScreenState extends State<NotesScreen> {
                 decoration: InputDecoration(
                   hintText: 'Search notes...',
                   border: InputBorder.none,
-                  hintStyle: TextStyle(),
+                  hintStyle: TextStyle(
+                      color:
+                          widget.isDarkMode ? Colors.white70 : Colors.black54),
                 ),
-                style: TextStyle(),
+                style: TextStyle(
+                    color: widget.isDarkMode ? Colors.white : Colors.black),
                 onChanged: (value) {
                   setState(() {
                     _searchQuery = value.toLowerCase();
@@ -127,24 +138,33 @@ class _NotesScreenState extends State<NotesScreen> {
             itemBuilder: (context, index) {
               Map<String, dynamic> data =
                   filteredDocs[index].data() as Map<String, dynamic>;
+              Color noteColor = Color(data['color'] ?? Colors.white.value);
+              Color textColor = getTextColor(noteColor);
               return Card(
                 elevation: 2,
                 margin: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                color: noteColor,
                 child: ListTile(
                   title: Text(
                     data['title'] ?? 'No Title',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: textColor,
+                    ),
                   ),
                   subtitle: Text(
                     data['content'] ?? 'No Content',
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: textColor),
                   ),
                   leading: CircleAvatar(
-                    backgroundColor: Colors.blue,
+                    backgroundColor: textColor,
                     child: Text(
                       (data['title'] ?? 'N')[0].toUpperCase(),
-                      style: TextStyle(color: Colors.white),
+                      style: TextStyle(
+                        color: noteColor,
+                      ),
                     ),
                   ),
                   onTap: () {
@@ -156,7 +176,11 @@ class _NotesScreenState extends State<NotesScreen> {
                           noteId: filteredDocs[index].id,
                         ),
                       ),
-                    );
+                    ).then((updatedNote) {
+                      if (updatedNote != null) {
+                        // If the note was updated, you can handle it here if needed
+                      }
+                    });
                   },
                 ),
               );

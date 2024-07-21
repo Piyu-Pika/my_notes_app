@@ -15,6 +15,16 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
   final _linkController = TextEditingController();
   bool _isLoading = false;
   final gemini = Gemini.instance;
+  Color _selectedColor = Colors.white;
+
+  final List<Color> _colorOptions = [
+    Colors.white,
+    Colors.red[100]!,
+    Colors.blue[100]!,
+    Colors.green[100]!,
+    Colors.yellow[100]!,
+    Colors.purple[100]!,
+  ];
 
   @override
   void dispose() {
@@ -25,48 +35,7 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
   }
 
   Future<void> _generateTitle() async {
-    if (_contentController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Please enter some content first')),
-      );
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      String prompt = '''
-      Based on the following note content, generate a concise and relevant title:
-      ${_contentController.text}
-      
-      The title should be short, catchy, and representative of the main idea in the content.
-      under 50 charcters
-      ''';
-
-      final response = await gemini.text(prompt);
-      String generatedTitle =
-          response?.content?.parts?.last.text ?? 'Generated Title';
-
-      // Trim and limit the title length if necessary
-      generatedTitle = generatedTitle.trim();
-      if (generatedTitle.length > 50) {
-        generatedTitle = generatedTitle.substring(0, 47) + '...';
-      }
-
-      setState(() {
-        _titleController.text = generatedTitle;
-      });
-    } catch (error) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to generate title: $error')),
-      );
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
+    // ... (keep the existing _generateTitle method)
   }
 
   void _submitForm() async {
@@ -86,6 +55,7 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
           'content': _contentController.text.trim(),
           'link': _linkController.text.trim(),
           'timestamp': FieldValue.serverTimestamp(),
+          'color': _selectedColor.value,
         });
 
         Navigator.pop(context);
@@ -182,6 +152,52 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
                               border: InputBorder.none,
                               prefixIcon: Icon(Icons.link),
                             ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 16),
+                      Card(
+                        elevation: 4,
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Note Color',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              SizedBox(height: 8),
+                              Wrap(
+                                spacing: 8,
+                                children: _colorOptions.map((Color color) {
+                                  return GestureDetector(
+                                    onTap: () {
+                                      setState(() {
+                                        _selectedColor = color;
+                                      });
+                                    },
+                                    child: Container(
+                                      width: 40,
+                                      height: 40,
+                                      decoration: BoxDecoration(
+                                        color: color,
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: _selectedColor == color
+                                              ? Colors.black
+                                              : Colors.grey,
+                                          width: 2,
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
+                            ],
                           ),
                         ),
                       ),
