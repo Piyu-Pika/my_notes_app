@@ -35,7 +35,48 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
   }
 
   Future<void> _generateTitle() async {
-    // ... (keep the existing _generateTitle method)
+    if (_contentController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Please enter some content first')),
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      String prompt = '''
+      Based on the following note content, generate a concise and relevant title:
+      ${_contentController.text}
+      
+      The title should be short, catchy, and representative of the main idea in the content.
+      under 50 charcters
+      ''';
+
+      final response = await gemini.text(prompt);
+      String generatedTitle =
+          response?.content?.parts?.last.text ?? 'Generated Title';
+
+      // Trim and limit the title length if necessary
+      generatedTitle = generatedTitle.trim();
+      if (generatedTitle.length > 50) {
+        generatedTitle = generatedTitle.substring(0, 47) + '...';
+      }
+
+      setState(() {
+        _titleController.text = generatedTitle;
+      });
+    } catch (error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to generate title: $error')),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   void _submitForm() async {
