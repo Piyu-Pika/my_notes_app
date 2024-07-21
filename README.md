@@ -10,10 +10,16 @@ A sleek and intuitive note-taking application created using Flutter and Firebase
 - 🔍 Search functionality to easily find notes
 - 🧠 AI-powered title generator for your notes
 - 💬 Chat with your notes using AI assistance
+- 🌈 Color coding for better note classification
 
 ## 🤖 New AI Features
 - **AI Title Generator**: Automatically generate catchy and relevant titles for your notes using Google Gemini AI
 - **Chat with Notes**: Engage in a conversation about your notes with an AI assistant, powered by Google Gemini
+
+## 🌈 Color Coding
+- Easily categorize and visually organize your notes with a selection of colors
+- Choose from a range of preset colors when creating or editing a note
+- Quickly identify note categories at a glance in the main notes list
 
 ## 📸 Screenshots
 ![ui_update](https://github.com/user-attachments/assets/3a0ade21-a683-4c3a-830a-cb76ad9c5f6a)
@@ -42,16 +48,19 @@ A sleek and intuitive note-taking application created using Flutter and Firebase
 - ➕ Tap the floating action button to add a new note
 - ✏️ Fill in the title, content, and an optional link for your note
 - 🧠 Use the AI title generator to create a title based on your note content
+- 🎨 Select a color for your note to categorize it
 - 💾 Tap 'Save Note' to store your note
 - 🔍 Use the search functionality in the app bar to find specific notes
 - 💬 Chat with your notes to get AI-powered insights and answers
 - 🌓 Toggle between light and dark modes for comfortable viewing
+
 ## 🆕 New UI Enhancements
 - Gradient backgrounds for a modern look
 - Card-based layout for better organization
 - Improved form fields with icons and rounded corners
 - Customized buttons with gradient colors
 - Responsive design for various screen sizes
+- Color-coded notes for easy visual categorization
 
 ## 🤝 Contributing
 Contributions, issues, and feature requests are welcome. Feel free to check [issues page](https://github.com/Piyu-Pika/my_notes_app/issues) if you want to contribute.
@@ -71,3 +80,5 @@ Piyush Bhardwaj
 - Firebase platform
 - url_launcher package
 - intl package for date formatting
+- shared_preferences
+- device_apps
