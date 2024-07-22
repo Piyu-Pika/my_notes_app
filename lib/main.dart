@@ -72,7 +72,7 @@ class _MyAppState extends State<MyApp> {
         iconTheme: IconThemeData(color: Colors.white),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
-            backgroundColor: Color(0xFF3D5AFE),
+            backgroundColor: Color.fromARGB(255, 61, 157, 254),
             foregroundColor: Colors.white,
             padding: EdgeInsets.symmetric(horizontal: 50, vertical: 15),
             textStyle: TextStyle(
@@ -99,7 +99,6 @@ class _MyAppState extends State<MyApp> {
     } else {
       return ThemeData(
         brightness: Brightness.light,
-        fontFamily: 'Roboto',
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.blue[700],
@@ -148,3 +147,7 @@ class AuthWrapper extends StatelessWidget {
     );
   }
 }
+
+
+
+//1446 lines of code 

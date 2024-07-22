@@ -2,13 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_gemini/flutter_gemini.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AddNoteScreen extends StatefulWidget {
   @override
   _AddNoteScreenState createState() => _AddNoteScreenState();
 }
 
-class _AddNoteScreenState extends State<AddNoteScreen> {
+class _AddNoteScreenState extends State<AddNoteScreen>
+    with WidgetsBindingObserver {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _contentController = TextEditingController();
@@ -27,11 +29,52 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _loadSavedData();
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _titleController.dispose();
     _contentController.dispose();
     _linkController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      _saveDataLocally();
+    }
+  }
+
+  Future<void> _loadSavedData() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _titleController.text = prefs.getString('temp_title') ?? '';
+      _contentController.text = prefs.getString('temp_content') ?? '';
+      _linkController.text = prefs.getString('temp_link') ?? '';
+      _selectedColor = Color(prefs.getInt('temp_color') ?? Colors.white.value);
+    });
+  }
+
+  Future<void> _saveDataLocally() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('temp_title', _titleController.text);
+    await prefs.setString('temp_content', _contentController.text);
+    await prefs.setString('temp_link', _linkController.text);
+    await prefs.setInt('temp_color', _selectedColor.value);
+  }
+
+  Future<void> _clearLocalData() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('temp_title');
+    await prefs.remove('temp_content');
+    await prefs.remove('temp_link');
+    await prefs.remove('temp_color');
   }
 
   Future<void> _generateTitle() async {
@@ -52,7 +95,7 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
       ${_contentController.text}
       
       The title should be short, catchy, and representative of the main idea in the content.
-      under 50 charcters
+      under 50 characters
       ''';
 
       final response = await gemini.text(prompt);
@@ -99,6 +142,7 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
           'color': _selectedColor.value,
         });
 
+        await _clearLocalData();
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Note added successfully')),
@@ -115,160 +159,200 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
     }
   }
 
+  Future<bool> _onWillPop() async {
+    if (_titleController.text.isNotEmpty ||
+        _contentController.text.isNotEmpty ||
+        _linkController.text.isNotEmpty) {
+      return await showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: Text('Discard changes?'),
+              content: Text('If you go back, your changes will not be saved.'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    await _clearLocalData();
+                    Navigator.of(context).pop(true);
+                  },
+                  child: Text(
+                    'Discard',
+                    style: TextStyle(color: Colors.red),
+                  ),
+                ),
+              ],
+            ),
+          ) ??
+          false;
+    }
+    await _clearLocalData();
+    return true;
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Add Note'),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.save),
-            onPressed: _isLoading ? null : _submitForm,
-          ),
-        ],
-      ),
-      body: _isLoading
-          ? Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    children: [
-                      Card(
-                        elevation: 4,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                          child: TextFormField(
-                            controller: _titleController,
-                            decoration: InputDecoration(
-                              labelText: 'Title',
-                              border: InputBorder.none,
-                              suffixIcon: IconButton(
-                                icon: Icon(Icons.auto_awesome_rounded),
-                                onPressed: _generateTitle,
-                                tooltip: 'Generate title',
-                              ),
-                            ),
-                            validator: (value) =>
-                                value!.isEmpty ? 'Please enter a title' : null,
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                      SizedBox(height: 16),
-                      Card(
-                        elevation: 4,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                          child: TextFormField(
-                            controller: _contentController,
-                            decoration: InputDecoration(
-                              labelText: 'Content',
-                              border: InputBorder.none,
-                            ),
-                            validator: (value) => value!.isEmpty
-                                ? 'Please enter some content'
-                                : null,
-                            maxLines: 12,
-                            keyboardType: TextInputType.multiline,
-                          ),
-                        ),
-                      ),
-                      SizedBox(height: 16),
-                      Card(
-                        elevation: 4,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                          child: TextFormField(
-                            controller: _linkController,
-                            decoration: InputDecoration(
-                              labelText: 'Link (optional)',
-                              border: InputBorder.none,
-                              prefixIcon: Icon(Icons.link),
-                            ),
-                          ),
-                        ),
-                      ),
-                      SizedBox(height: 16),
-                      Card(
-                        elevation: 4,
-                        child: Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Note Color',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
+    return WillPopScope(
+      onWillPop: _onWillPop,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text('Add Note'),
+          actions: [
+            IconButton(
+              icon: Icon(Icons.save),
+              onPressed: _isLoading ? null : _submitForm,
+            ),
+          ],
+        ),
+        body: _isLoading
+            ? Center(child: CircularProgressIndicator())
+            : SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      children: [
+                        Card(
+                          elevation: 4,
+                          child: Padding(
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 8.0),
+                            child: TextFormField(
+                              controller: _titleController,
+                              decoration: InputDecoration(
+                                labelText: 'Title',
+                                border: InputBorder.none,
+                                suffixIcon: IconButton(
+                                  icon: Icon(Icons.auto_awesome_rounded),
+                                  onPressed: _generateTitle,
+                                  tooltip: 'Generate title',
                                 ),
                               ),
-                              SizedBox(height: 8),
-                              Wrap(
-                                spacing: 12,
-                                children: _colorOptions.map((Color color) {
-                                  return GestureDetector(
-                                    onTap: () {
-                                      setState(() {
-                                        _selectedColor = color;
-                                      });
-                                    },
-                                    child: Container(
-                                      width: 40,
-                                      height: 40,
-                                      decoration: BoxDecoration(
-                                        color: color,
-                                        shape: BoxShape.circle,
-                                        border: Border.all(
-                                          color: _selectedColor == color
-                                              ? Colors.black
-                                              : Colors.grey,
-                                          width: 2,
+                              validator: (value) => value!.isEmpty
+                                  ? 'Please enter a title'
+                                  : null,
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 16),
+                        Card(
+                          elevation: 4,
+                          child: Padding(
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 8.0),
+                            child: TextFormField(
+                              controller: _contentController,
+                              decoration: InputDecoration(
+                                labelText: 'Content',
+                                border: InputBorder.none,
+                              ),
+                              validator: (value) => value!.isEmpty
+                                  ? 'Please enter some content'
+                                  : null,
+                              maxLines: 12,
+                              keyboardType: TextInputType.multiline,
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 16),
+                        Card(
+                          elevation: 4,
+                          child: Padding(
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 8.0),
+                            child: TextFormField(
+                              controller: _linkController,
+                              decoration: InputDecoration(
+                                labelText: 'Link (optional)',
+                                border: InputBorder.none,
+                                prefixIcon: Icon(Icons.link),
+                              ),
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 16),
+                        Card(
+                          elevation: 4,
+                          child: Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Note Color',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                SizedBox(height: 8),
+                                Wrap(
+                                  spacing: 12,
+                                  children: _colorOptions.map((Color color) {
+                                    return GestureDetector(
+                                      onTap: () {
+                                        setState(() {
+                                          _selectedColor = color;
+                                        });
+                                      },
+                                      child: Container(
+                                        width: 40,
+                                        height: 40,
+                                        decoration: BoxDecoration(
+                                          color: color,
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color: _selectedColor == color
+                                                ? Colors.black
+                                                : Colors.grey,
+                                            width: 2,
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                  );
-                                }).toList(),
-                              ),
-                            ],
+                                    );
+                                  }).toList(),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                      ),
-                      SizedBox(height: 20),
-                      ElevatedButton.icon(
-                        icon: Icon(
-                          Icons.save,
-                          color: isDarkMode ? Colors.white : Colors.black87,
-                        ),
-                        label: Text(
-                          'Save Note',
-                          style: TextStyle(
+                        SizedBox(height: 20),
+                        ElevatedButton.icon(
+                          icon: Icon(
+                            Icons.save,
                             color: isDarkMode ? Colors.white : Colors.black87,
                           ),
-                        ),
-                        onPressed: _isLoading ? null : _submitForm,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Theme.of(context).primaryColor,
-                          padding: EdgeInsets.symmetric(
-                              horizontal: 40, vertical: 15),
-                          textStyle: TextStyle(
-                            fontSize: 18,
+                          label: Text(
+                            'Save Note',
+                            style: TextStyle(
+                              color: isDarkMode ? Colors.white : Colors.black87,
+                            ),
+                          ),
+                          onPressed: _isLoading ? null : _submitForm,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Theme.of(context).primaryColor,
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 40, vertical: 15),
+                            textStyle: TextStyle(
+                              fontSize: 18,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
+      ),
     );
   }
 }
