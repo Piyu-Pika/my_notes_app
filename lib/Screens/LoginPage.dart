@@ -90,6 +90,12 @@ class _LoginPageState extends State<LoginPage> {
                               prefixIcon: Icon(Icons.email),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                  color: Theme.of(context).brightness ==
+                                          Brightness.dark
+                                      ? Colors.white
+                                      : Colors.black,
+                                ),
                               ),
                             ),
                             validator: (value) {
@@ -119,6 +125,12 @@ class _LoginPageState extends State<LoginPage> {
                               ),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                  color: Theme.of(context).brightness ==
+                                          Brightness.dark
+                                      ? Colors.white
+                                      : Colors.black,
+                                ),
                               ),
                             ),
                             obscureText: _obscurePassword,
@@ -159,8 +171,10 @@ class _LoginPageState extends State<LoginPage> {
                           SizedBox(height: 16),
                           GestureDetector(
                             onTap: () {
-                              MaterialPageRoute(
-                                    builder: (context) => Homescreen());
+                              Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (context) => Homescreen()));
                             },
                             child: Text(
                               'Don\'t have an account? Sign Up',

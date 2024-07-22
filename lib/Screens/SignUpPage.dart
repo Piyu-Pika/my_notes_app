@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:my_notes_app/Screens/LoginPage.dart';
+import 'package:my_notes_app/Screens/NotesScreen.dart'; // Assuming this is where you navigate after signup
 
 class Homescreen extends StatefulWidget {
   const Homescreen({Key? key}) : super(key: key);
@@ -20,15 +22,59 @@ class _HomescreenState extends State<Homescreen> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
 
+  Future<void> addIntroductoryNote(String userId) async {
+    final noteData = {
+      'title': 'Welcome to My Notes App!',
+      'content':
+          '''Welcome to My Notes App! Here's a quick guide to get you started:
+
+1. Add Notes: Tap the + button to create a new note.
+2. Edit Notes: Tap on a note to view it, then use the edit icon to make changes.
+3. Delete Notes: In the note details screen, use the delete icon to remove a note.
+4. Save Notes: Tap on the save icon at the app bar or button at the bottom
+5. Search: Use the search icon in the app bar to find specific notes.
+6. Theme: Toggle between light and dark mode using the theme icon.
+7. Chat: In note details, use the chat button to interact with your note content.
+8. Ai Title: Use the ✨ button to generate the title.
+
+
+Feel free to delete this note once you're familiar with the app. Happy note-taking!''',
+      'timestamp': FieldValue.serverTimestamp(),
+      'color': 0xFFFFF176, // Light yellow color
+    };
+
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .collection('notes')
+        .add(noteData);
+  }
+
   void _register() async {
     if (_formKey.currentState!.validate()) {
       try {
-        await _auth.createUserWithEmailAndPassword(
+        UserCredential userCredential =
+            await _auth.createUserWithEmailAndPassword(
           email: _emailController.text.trim(),
           password: _passwordController.text,
         );
+
+        // Add introductory note
+        await addIntroductoryNote(userCredential.user!.uid);
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Registration successful')),
+        );
+
+        // Navigate to NotesScreen after successful registration
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => NotesScreen(
+              toggleTheme: () {}, // You'll need to implement this
+              isDarkMode: false, // You'll need to implement this
+            ),
+          ),
         );
       } on FirebaseAuthException catch (e) {
         setState(() {
@@ -78,6 +124,12 @@ class _HomescreenState extends State<Homescreen> {
                               prefixIcon: Icon(Icons.email),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                  color: Theme.of(context).brightness ==
+                                          Brightness.dark
+                                      ? Colors.white
+                                      : Colors.black,
+                                ),
                               ),
                             ),
                             validator: (value) {
@@ -107,6 +159,12 @@ class _HomescreenState extends State<Homescreen> {
                               ),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                  color: Theme.of(context).brightness ==
+                                          Brightness.dark
+                                      ? Colors.white
+                                      : Colors.black,
+                                ),
                               ),
                             ),
                             obscureText: _obscurePassword,
@@ -141,6 +199,12 @@ class _HomescreenState extends State<Homescreen> {
                               ),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                  color: Theme.of(context).brightness ==
+                                          Brightness.dark
+                                      ? Colors.white
+                                      : Colors.black,
+                                ),
                               ),
                             ),
                             obscureText: _obscureConfirmPassword,

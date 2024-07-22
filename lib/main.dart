@@ -88,7 +88,6 @@ class _MyAppState extends State<MyApp> {
           primary: Color(0xFF3D5AFE),
           secondary: Color(0xFF64FFDA),
           surface: Color(0xFF2C2C2C),
-          background: Color(0xFF121212),
           error: Color(0xFFCF6679),
         ),
         floatingActionButtonTheme: FloatingActionButtonThemeData(
@@ -147,7 +146,3 @@ class AuthWrapper extends StatelessWidget {
     );
   }
 }
-
-
-
-//1446 lines of code 
