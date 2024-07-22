@@ -129,7 +129,7 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
                             ),
                             SizedBox(height: 8),
                             Wrap(
-                              spacing: 8,
+                              spacing: 12,
                               children: _colorOptions.map((Color color) {
                                 return GestureDetector(
                                   onTap: () {

@@ -176,7 +176,7 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
                             validator: (value) => value!.isEmpty
                                 ? 'Please enter some content'
                                 : null,
-                            maxLines: 15,
+                            maxLines: 12,
                             keyboardType: TextInputType.multiline,
                           ),
                         ),
@@ -213,7 +213,7 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
                               ),
                               SizedBox(height: 8),
                               Wrap(
-                                spacing: 8,
+                                spacing: 12,
                                 children: _colorOptions.map((Color color) {
                                   return GestureDetector(
                                     onTap: () {

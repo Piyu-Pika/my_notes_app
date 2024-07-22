@@ -58,8 +58,19 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
     );
   }
 
+  Color getTextColor(Color backgroundColor) {
+    if (backgroundColor.computeLuminance() > 0.5) {
+      return Colors.black;
+    } else {
+      return Colors.white;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    Color noteColor = Color(widget.note['color'] ?? Colors.white.value);
+    Color textColor = getTextColor(noteColor);
+
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.note['title'] ?? 'Note Details'),
@@ -82,6 +93,7 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
             children: [
               Card(
                 elevation: 4,
+                color: noteColor,
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
@@ -92,17 +104,22 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
                         style:
                             Theme.of(context).textTheme.headlineSmall!.copyWith(
                                   fontWeight: FontWeight.bold,
+                                  color: textColor,
                                 ),
                       ),
                       SizedBox(height: 8),
                       Text(
                         'Created: ${widget.note['timestamp'] != null ? DateFormat.yMd().add_jm().format(widget.note['timestamp'].toDate()) : 'No Date'}',
-                        style: Theme.of(context).textTheme.bodySmall,
+                        style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                              color: textColor,
+                            ),
                       ),
-                      Divider(height: 20),
+                      Divider(height: 20, color: textColor),
                       SelectableText(
                         widget.note['content'] ?? 'No content',
-                        style: Theme.of(context).textTheme.bodyLarge,
+                        style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+                              color: textColor,
+                            ),
                       ),
                     ],
                   ),
@@ -159,6 +176,7 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
           widget.note['content'] = updatedNote['content'];
           widget.note['link'] = updatedNote['link'];
           widget.note['timestamp'] = updatedNote['timestamp'];
+          widget.note['color'] = updatedNote['color'];
         });
       }
     });

@@ -70,7 +70,6 @@ MIT License
 
 Copyright (c) 2024 Piyush Bhardwaj
 
-[Rest of the license text remains unchanged]
 
 ## 👨‍💻 Author
 Piyush Bhardwaj
