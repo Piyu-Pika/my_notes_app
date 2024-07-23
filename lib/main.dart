@@ -31,6 +31,7 @@ class _MyAppState extends State<MyApp> {
 
   void _loadTheme() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
+    print("theme_mode ${prefs.getBool(THEME_KEY)}");
     setState(() {
       _isDarkMode = prefs.getBool(THEME_KEY) ?? false;
     });
@@ -39,8 +40,8 @@ class _MyAppState extends State<MyApp> {
   void toggleTheme() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
-      _isDarkMode = !_isDarkMode;
       prefs.setBool(THEME_KEY, _isDarkMode);
+      _isDarkMode = !_isDarkMode;
     });
   }
 
@@ -136,7 +137,7 @@ class AuthWrapper extends StatelessWidget {
         if (snapshot.connectionState == ConnectionState.active) {
           User? user = snapshot.data;
           if (user == null) {
-            return Homescreen();
+            return Homescreen(toggleTheme: toggleTheme, isDarkMode: isDarkMode);
           }
 
           return NotesScreen(toggleTheme: toggleTheme, isDarkMode: isDarkMode);

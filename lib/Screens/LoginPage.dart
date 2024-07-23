@@ -2,8 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:my_notes_app/Screens/SignUpPage.dart';
 import 'package:my_notes_app/Screens/notesScreen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginPage extends StatefulWidget {
+  final Function toggleTheme;
+  final bool isDarkMode;
+
+  const LoginPage(
+      {super.key, required this.toggleTheme, required this.isDarkMode});
   @override
   _LoginPageState createState() => _LoginPageState();
 }
@@ -18,6 +24,8 @@ class _LoginPageState extends State<LoginPage> {
   bool _obscurePassword = true;
   bool _isLoading = false;
 
+  static const String THEME_KEY = 'isDarkMode';
+
   Future<void> _login() async {
     if (_formKey.currentState!.validate()) {
       setState(() {
@@ -29,12 +37,16 @@ class _LoginPageState extends State<LoginPage> {
           email: _emailController.text.trim(),
           password: _passwordController.text.trim(),
         );
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        bool _isDarkMode = false;
+        await prefs.setBool(THEME_KEY, _isDarkMode);
+
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
             builder: (context) => NotesScreen(
-              toggleTheme: () {}, // Pass a dummy function for now
-              isDarkMode: Theme.of(context).brightness == Brightness.dark,
+              toggleTheme: widget.toggleTheme,
+              isDarkMode: widget.isDarkMode,
             ),
           ),
         );
@@ -90,12 +102,6 @@ class _LoginPageState extends State<LoginPage> {
                               prefixIcon: Icon(Icons.email),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(
-                                  color: Theme.of(context).brightness ==
-                                          Brightness.dark
-                                      ? Colors.white
-                                      : Colors.black,
-                                ),
                               ),
                             ),
                             validator: (value) {
@@ -125,12 +131,7 @@ class _LoginPageState extends State<LoginPage> {
                               ),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(
-                                  color: Theme.of(context).brightness ==
-                                          Brightness.dark
-                                      ? Colors.white
-                                      : Colors.black,
-                                ),
+                                borderSide: BorderSide(),
                               ),
                             ),
                             obscureText: _obscurePassword,
@@ -174,7 +175,10 @@ class _LoginPageState extends State<LoginPage> {
                               Navigator.pushReplacement(
                                   context,
                                   MaterialPageRoute(
-                                      builder: (context) => Homescreen()));
+                                      builder: (context) => Homescreen(
+                                            toggleTheme: widget.toggleTheme,
+                                            isDarkMode: widget.isDarkMode,
+                                          )));
                             },
                             child: Text(
                               'Don\'t have an account? Sign Up',

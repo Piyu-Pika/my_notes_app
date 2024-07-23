@@ -2,10 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:my_notes_app/Screens/LoginPage.dart';
-import 'package:my_notes_app/Screens/NotesScreen.dart'; // Assuming this is where you navigate after signup
+import 'package:my_notes_app/Screens/NotesScreen.dart';
 
 class Homescreen extends StatefulWidget {
-  const Homescreen({Key? key}) : super(key: key);
+  final Function toggleTheme;
+  final bool isDarkMode;
+
+  const Homescreen(
+      {Key? key, required this.toggleTheme, required this.isDarkMode})
+      : super(key: key);
 
   @override
   State<Homescreen> createState() => _HomescreenState();
@@ -37,7 +42,6 @@ class _HomescreenState extends State<Homescreen> {
 7. Chat: In note details, use the chat button to interact with your note content.
 8. Ai Title: Use the ✨ button to generate the title.
 
-
 Feel free to delete this note once you're familiar with the app. Happy note-taking!''',
       'timestamp': FieldValue.serverTimestamp(),
       'color': 0xFFFFF176, // Light yellow color
@@ -66,13 +70,12 @@ Feel free to delete this note once you're familiar with the app. Happy note-taki
           SnackBar(content: Text('Registration successful')),
         );
 
-        // Navigate to NotesScreen after successful registration
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
             builder: (context) => NotesScreen(
-              toggleTheme: () {}, // You'll need to implement this
-              isDarkMode: false, // You'll need to implement this
+              toggleTheme: widget.toggleTheme,
+              isDarkMode: widget.isDarkMode,
             ),
           ),
         );
@@ -92,7 +95,9 @@ Feel free to delete this note once you're familiar with the app. Happy note-taki
           gradient: LinearGradient(
             begin: Alignment.topRight,
             end: Alignment.bottomLeft,
-            colors: [Colors.blue[100]!, Colors.blue[400]!],
+            colors: widget.isDarkMode
+                ? [Colors.grey[800]!, Colors.grey[600]!]
+                : [Colors.blue[100]!, Colors.blue[400]!],
           ),
         ),
         child: SafeArea(
@@ -105,6 +110,7 @@ Feel free to delete this note once you're familiar with the app. Happy note-taki
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
+                  color: widget.isDarkMode ? Colors.grey[850] : Colors.white,
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: Form(
@@ -114,7 +120,14 @@ Feel free to delete this note once you're familiar with the app. Happy note-taki
                         children: [
                           Text(
                             'Create Account',
-                            style: Theme.of(context).textTheme.headlineMedium,
+                            style: Theme.of(context)
+                                .textTheme
+                                .headlineMedium!
+                                .copyWith(
+                                  color: widget.isDarkMode
+                                      ? Colors.white
+                                      : Colors.black87,
+                                ),
                           ),
                           SizedBox(height: 20),
                           TextFormField(
@@ -124,12 +137,7 @@ Feel free to delete this note once you're familiar with the app. Happy note-taki
                               prefixIcon: Icon(Icons.email),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(
-                                  color: Theme.of(context).brightness ==
-                                          Brightness.dark
-                                      ? Colors.white
-                                      : Colors.black,
-                                ),
+                                borderSide: BorderSide(),
                               ),
                             ),
                             validator: (value) {
@@ -159,12 +167,7 @@ Feel free to delete this note once you're familiar with the app. Happy note-taki
                               ),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(
-                                  color: Theme.of(context).brightness ==
-                                          Brightness.dark
-                                      ? Colors.white
-                                      : Colors.black,
-                                ),
+                                borderSide: BorderSide(),
                               ),
                             ),
                             obscureText: _obscurePassword,
@@ -199,12 +202,6 @@ Feel free to delete this note once you're familiar with the app. Happy note-taki
                               ),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(
-                                  color: Theme.of(context).brightness ==
-                                          Brightness.dark
-                                      ? Colors.white
-                                      : Colors.black,
-                                ),
                               ),
                             ),
                             obscureText: _obscureConfirmPassword,
@@ -223,7 +220,9 @@ Feel free to delete this note once you're familiar with the app. Happy note-taki
                             onPressed: _register,
                             child: Text('Register'),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.blueAccent[700],
+                              backgroundColor: widget.isDarkMode
+                                  ? Colors.blueAccent[700]
+                                  : Colors.blue[700],
                               padding: EdgeInsets.symmetric(
                                   horizontal: 50, vertical: 15),
                               textStyle: TextStyle(
@@ -249,13 +248,19 @@ Feel free to delete this note once you're familiar with the app. Happy note-taki
                               Navigator.pushReplacement(
                                 context,
                                 MaterialPageRoute(
-                                    builder: (context) => LoginPage()),
+                                  builder: (context) => LoginPage(
+                                    toggleTheme: widget.toggleTheme,
+                                    isDarkMode: widget.isDarkMode,
+                                  ),
+                                ),
                               );
                             },
                             child: Text(
                               'Already have an account? Login',
                               style: TextStyle(
-                                color: Colors.blue[700],
+                                color: widget.isDarkMode
+                                    ? Colors.blue[300]
+                                    : Colors.blue[700],
                                 decoration: TextDecoration.underline,
                               ),
                             ),
