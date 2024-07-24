@@ -20,8 +20,10 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  bool _isDarkMode = false;
+  bool isDarkMode = false;
+  bool isIcon = false;
   static const String THEME_KEY = 'isDarkMode';
+  static const String IconKey = 'isDark';
 
   @override
   void initState() {
@@ -31,17 +33,19 @@ class _MyAppState extends State<MyApp> {
 
   void _loadTheme() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    print("theme_mode ${prefs.getBool(THEME_KEY)}");
     setState(() {
-      _isDarkMode = prefs.getBool(THEME_KEY) ?? false;
+      isDarkMode = prefs.getBool(THEME_KEY) ?? false;
+      isIcon = prefs.getBool(IconKey) ?? false;
     });
   }
 
   void toggleTheme() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
-      prefs.setBool(THEME_KEY, _isDarkMode);
-      _isDarkMode = !_isDarkMode;
+      isDarkMode = !isDarkMode;
+      prefs.setBool(THEME_KEY, isDarkMode);
+
+      print(isDarkMode);
     });
   }
 
@@ -49,8 +53,8 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Notes App',
-      theme: _buildTheme(_isDarkMode),
-      home: AuthWrapper(toggleTheme: toggleTheme, isDarkMode: _isDarkMode),
+      theme: _buildTheme(isDarkMode),
+      home: AuthWrapper(toggleTheme: toggleTheme, isDarkMode: isDarkMode),
       debugShowCheckedModeBanner: false,
     );
   }

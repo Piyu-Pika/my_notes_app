@@ -15,9 +15,11 @@ class _AddNoteScreenState extends State<AddNoteScreen>
   final _titleController = TextEditingController();
   final _contentController = TextEditingController();
   final _linkController = TextEditingController();
+  final _tagController = TextEditingController();
   bool _isLoading = false;
   final gemini = Gemini.instance;
   Color _selectedColor = Colors.white;
+  List<String> _tags = [];
 
   final List<Color> _colorOptions = [
     Colors.white,
@@ -41,6 +43,7 @@ class _AddNoteScreenState extends State<AddNoteScreen>
     _titleController.dispose();
     _contentController.dispose();
     _linkController.dispose();
+    _tagController.dispose();
     super.dispose();
   }
 
@@ -58,6 +61,7 @@ class _AddNoteScreenState extends State<AddNoteScreen>
       _contentController.text = prefs.getString('temp_content') ?? '';
       _linkController.text = prefs.getString('temp_link') ?? '';
       _selectedColor = Color(prefs.getInt('temp_color') ?? Colors.white.value);
+      _tags = prefs.getStringList('temp_tags') ?? [];
     });
   }
 
@@ -67,6 +71,7 @@ class _AddNoteScreenState extends State<AddNoteScreen>
     await prefs.setString('temp_content', _contentController.text);
     await prefs.setString('temp_link', _linkController.text);
     await prefs.setInt('temp_color', _selectedColor.value);
+    await prefs.setStringList('temp_tags', _tags);
   }
 
   Future<void> _clearLocalData() async {
@@ -75,6 +80,7 @@ class _AddNoteScreenState extends State<AddNoteScreen>
     await prefs.remove('temp_content');
     await prefs.remove('temp_link');
     await prefs.remove('temp_color');
+    await prefs.remove('temp_tags');
   }
 
   Future<void> _generateTitle() async {
@@ -102,7 +108,6 @@ class _AddNoteScreenState extends State<AddNoteScreen>
       String generatedTitle =
           response?.content?.parts?.last.text ?? 'Generated Title';
 
-      // Trim and limit the title length if necessary
       generatedTitle = generatedTitle.trim();
       if (generatedTitle.length > 50) {
         generatedTitle = generatedTitle.substring(0, 47) + '...';
@@ -120,6 +125,27 @@ class _AddNoteScreenState extends State<AddNoteScreen>
         _isLoading = false;
       });
     }
+  }
+
+  void _addTag() {
+    String tag = _tagController.text.trim();
+    if (tag.isNotEmpty) {
+      if (!tag.startsWith('#')) {
+        tag = '#$tag';
+      }
+      setState(() {
+        if (!_tags.contains(tag)) {
+          _tags.add(tag);
+        }
+        _tagController.clear();
+      });
+    }
+  }
+
+  void _removeTag(String tag) {
+    setState(() {
+      _tags.remove(tag);
+    });
   }
 
   void _submitForm() async {
@@ -140,6 +166,7 @@ class _AddNoteScreenState extends State<AddNoteScreen>
           'link': _linkController.text.trim(),
           'timestamp': FieldValue.serverTimestamp(),
           'color': _selectedColor.value,
+          'tags': _tags,
         });
 
         await _clearLocalData();
@@ -162,7 +189,8 @@ class _AddNoteScreenState extends State<AddNoteScreen>
   Future<bool> _onWillPop() async {
     if (_titleController.text.isNotEmpty ||
         _contentController.text.isNotEmpty ||
-        _linkController.text.isNotEmpty) {
+        _linkController.text.isNotEmpty ||
+        _tags.isNotEmpty) {
       return await showDialog(
             context: context,
             builder: (context) => AlertDialog(
@@ -258,7 +286,7 @@ class _AddNoteScreenState extends State<AddNoteScreen>
                               validator: (value) => value!.isEmpty
                                   ? 'Please enter some content'
                                   : null,
-                              maxLines: 12,
+                              maxLines: 9,
                               keyboardType: TextInputType.multiline,
                             ),
                           ),
@@ -324,6 +352,45 @@ class _AddNoteScreenState extends State<AddNoteScreen>
                               ],
                             ),
                           ),
+                        ),
+                        SizedBox(height: 16),
+                        Card(
+                          elevation: 4,
+                          child: Padding(
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 8.0),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: TextField(
+                                    controller: _tagController,
+                                    decoration: InputDecoration(
+                                      labelText: 'Add Tag',
+                                      hintText: 'Enter tag (e.g., #work)',
+                                      border: InputBorder.none,
+                                    ),
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: Icon(Icons.add),
+                                  onPressed: _addTag,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 8),
+                        Wrap(
+                          spacing: 8,
+                          children: _tags
+                              .map((tag) => Chip(
+                                    label: Text(tag),
+                                    onDeleted: () => _removeTag(tag),
+                                    backgroundColor: Theme.of(context)
+                                        .primaryColor
+                                        .withOpacity(0.1),
+                                  ))
+                              .toList(),
                         ),
                         SizedBox(height: 20),
                         ElevatedButton.icon(

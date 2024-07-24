@@ -16,8 +16,10 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
   late TextEditingController _titleController;
   late TextEditingController _contentController;
   late TextEditingController _linkController;
+  late TextEditingController _tagController;
   bool _isLoading = false;
   late Color _selectedColor;
+  List<String> _tags = [];
 
   final List<Color> _colorOptions = [
     Colors.white,
@@ -34,7 +36,9 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
     _titleController = TextEditingController(text: widget.note['title']);
     _contentController = TextEditingController(text: widget.note['content']);
     _linkController = TextEditingController(text: widget.note['link']);
+    _tagController = TextEditingController();
     _selectedColor = Color(widget.note['color'] ?? Colors.white.value);
+    _tags = List<String>.from(widget.note['tags'] ?? []);
   }
 
   @override
@@ -42,7 +46,29 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
     _titleController.dispose();
     _contentController.dispose();
     _linkController.dispose();
+    _tagController.dispose();
     super.dispose();
+  }
+
+  void _addTag() {
+    String tag = _tagController.text.trim();
+    if (tag.isNotEmpty) {
+      if (!tag.startsWith('#')) {
+        tag = '#$tag';
+      }
+      setState(() {
+        if (!_tags.contains(tag)) {
+          _tags.add(tag);
+        }
+        _tagController.clear();
+      });
+    }
+  }
+
+  void _removeTag(String tag) {
+    setState(() {
+      _tags.remove(tag);
+    });
   }
 
   @override
@@ -158,6 +184,44 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
                         ),
                       ),
                     ),
+                    SizedBox(height: 16),
+                    Card(
+                      elevation: 4,
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: _tagController,
+                                decoration: InputDecoration(
+                                  labelText: 'Add Tag',
+                                  hintText: 'Enter tag (e.g., #work)',
+                                  border: InputBorder.none,
+                                ),
+                              ),
+                            ),
+                            IconButton(
+                              icon: Icon(Icons.add),
+                              onPressed: _addTag,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      children: _tags
+                          .map((tag) => Chip(
+                                label: Text(tag),
+                                onDeleted: () => _removeTag(tag),
+                                backgroundColor: Theme.of(context)
+                                    .primaryColor
+                                    .withOpacity(0.1),
+                              ))
+                          .toList(),
+                    ),
                   ],
                 ),
               ),
@@ -191,6 +255,7 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
         'link': _linkController.text.trim(),
         'timestamp': FieldValue.serverTimestamp(),
         'color': _selectedColor.value,
+        'tags': _tags,
       });
 
       Navigator.pop(context, {
@@ -199,6 +264,7 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
         'link': _linkController.text.trim(),
         'timestamp': Timestamp.now(),
         'color': _selectedColor.value,
+        'tags': _tags,
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
