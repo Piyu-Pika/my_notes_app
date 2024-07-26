@@ -7,6 +7,7 @@ import 'package:my_notes_app/Screens/notesScreen.dart';
 import 'package:my_notes_app/key.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+// w
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
@@ -20,8 +21,10 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  bool _isDarkMode = false;
+  bool isDarkMode = false;
+  bool isIcon = false;
   static const String THEME_KEY = 'isDarkMode';
+  static const String IconKey = 'isDark';
 
   @override
   void initState() {
@@ -32,15 +35,18 @@ class _MyAppState extends State<MyApp> {
   void _loadTheme() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
-      _isDarkMode = prefs.getBool(THEME_KEY) ?? false;
+      isDarkMode = prefs.getBool(THEME_KEY) ?? false;
+      isIcon = prefs.getBool(IconKey) ?? false;
     });
   }
 
   void toggleTheme() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
-      _isDarkMode = !_isDarkMode;
-      prefs.setBool(THEME_KEY, _isDarkMode);
+      isDarkMode = !isDarkMode;
+      prefs.setBool(THEME_KEY, isDarkMode);
+
+      print(isDarkMode);
     });
   }
 
@@ -48,8 +54,8 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Notes App',
-      theme: _buildTheme(_isDarkMode),
-      home: AuthWrapper(toggleTheme: toggleTheme, isDarkMode: _isDarkMode),
+      theme: _buildTheme(isDarkMode),
+      home: AuthWrapper(toggleTheme: toggleTheme, isDarkMode: isDarkMode),
       debugShowCheckedModeBanner: false,
     );
   }
@@ -136,7 +142,7 @@ class AuthWrapper extends StatelessWidget {
         if (snapshot.connectionState == ConnectionState.active) {
           User? user = snapshot.data;
           if (user == null) {
-            return Homescreen();
+            return Homescreen(toggleTheme: toggleTheme, isDarkMode: isDarkMode);
           }
 
           return NotesScreen(toggleTheme: toggleTheme, isDarkMode: isDarkMode);

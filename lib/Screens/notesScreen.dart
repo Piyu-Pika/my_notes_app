@@ -3,10 +3,15 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:my_notes_app/Screens/NoteAddScreen.dart';
 import 'package:my_notes_app/Screens/NotesDetailsScreen.dart';
+import 'package:my_notes_app/Screens/NoteEditScreen.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
+import 'package:animated_text_kit/animated_text_kit.dart';
 
+// w
 class NotesScreen extends StatefulWidget {
   final Function toggleTheme;
-  final bool isDarkMode;
+  bool isDarkMode;
 
   NotesScreen({required this.toggleTheme, required this.isDarkMode});
 
@@ -14,9 +19,33 @@ class NotesScreen extends StatefulWidget {
   _NotesScreenState createState() => _NotesScreenState();
 }
 
-class _NotesScreenState extends State<NotesScreen> {
+class _NotesScreenState extends State<NotesScreen>
+    with TickerProviderStateMixin {
   String _searchQuery = '';
   bool _isSearching = false;
+  Set<String> _selectedTags = Set<String>();
+  late AnimationController _fabAnimationController;
+  late Animation<double> _fabAnimation;
+  Color? _selectedColor;
+
+  @override
+  void initState() {
+    super.initState();
+    _fabAnimationController = AnimationController(
+      vsync: this,
+      duration: Duration(milliseconds: 300),
+    );
+    _fabAnimation = CurvedAnimation(
+      parent: _fabAnimationController,
+      curve: Curves.easeInOut,
+    );
+  }
+
+  @override
+  void dispose() {
+    _fabAnimationController.dispose();
+    super.dispose();
+  }
 
   void _showLogoutConfirmationDialog() {
     showDialog(
@@ -28,9 +57,7 @@ class _NotesScreenState extends State<NotesScreen> {
           actions: <Widget>[
             TextButton(
               child: Text('Cancel'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
+              onPressed: () => Navigator.of(context).pop(),
             ),
             TextButton(
               child: Text('Logout'),
@@ -46,11 +73,232 @@ class _NotesScreenState extends State<NotesScreen> {
   }
 
   Color getTextColor(Color backgroundColor) {
-    if (backgroundColor.computeLuminance() > 0.5) {
-      return Colors.black;
-    } else {
-      return Colors.white;
-    }
+    return backgroundColor.computeLuminance() > 0.5
+        ? Colors.black
+        : Colors.white;
+  }
+
+  void _toggleTag(String tag) {
+    setState(() {
+      if (_selectedTags.contains(tag)) {
+        _selectedTags.remove(tag);
+      } else {
+        _selectedTags.add(tag);
+      }
+    });
+  }
+
+  Widget _buildTagFilter(List<String> allTags) {
+    return Container(
+      height: 50,
+      child: Row(
+        children: [
+          Expanded(
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: allTags.length,
+              itemBuilder: (context, index) {
+                final tag = allTags[index];
+                final isSelected = _selectedTags.contains(tag);
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: FilterChip(
+                    label: Text(tag),
+                    selected: isSelected,
+                    onSelected: (_) => _toggleTag(tag),
+                    selectedColor:
+                        Theme.of(context).primaryColor.withOpacity(0.7),
+                    checkmarkColor: Colors.white,
+                    labelStyle: TextStyle(
+                      color: widget.isDarkMode ? Colors.white : Colors.black,
+                    ),
+                    backgroundColor:
+                        widget.isDarkMode ? Colors.grey[800] : Colors.grey[200],
+                  ),
+                );
+              },
+            ),
+          ),
+          if (_selectedTags.isNotEmpty)
+            IconButton(
+              icon: Icon(Icons.clear),
+              onPressed: () {
+                setState(() {
+                  _selectedTags.clear();
+                });
+              },
+              tooltip: 'Clear all filters',
+            ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _togglePinNote(String noteId, bool currentPinned) async {
+    final user = FirebaseAuth.instance.currentUser!;
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('notes')
+        .doc(noteId)
+        .update({'pinned': !currentPinned});
+  }
+
+  void _deleteNote(BuildContext context, String noteId) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("Delete Note"),
+          content: Text("Are you sure you want to delete this note?"),
+          actions: <Widget>[
+            TextButton(
+              child: Text("Cancel"),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            TextButton(
+              child: Text("Delete", style: TextStyle(color: Colors.red)),
+              onPressed: () {
+                Navigator.of(context).pop();
+                _performDelete(context, noteId);
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _performDelete(BuildContext context, String noteId) {
+    final user = FirebaseAuth.instance.currentUser!;
+    FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('notes')
+        .doc(noteId)
+        .delete()
+        .then((_) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Note deleted successfully')),
+      );
+    }).catchError((error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to delete note: $error')),
+      );
+    });
+  }
+
+  void _showNoteOptions(
+      BuildContext context, String noteId, Map<String, dynamic> noteData) {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              ListTile(
+                leading: Icon(Icons.edit),
+                title: Text('Edit'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _editNote(context, noteId, noteData);
+                },
+              ),
+              ListTile(
+                leading: Icon(noteData['pinned'] ?? false
+                    ? Icons.push_pin
+                    : Icons.push_pin_outlined),
+                title: Text(noteData['pinned'] ?? false ? 'Unpin' : 'Pin'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _togglePinNote(noteId, noteData['pinned'] ?? false);
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.delete, color: Colors.red),
+                title: Text('Delete', style: TextStyle(color: Colors.red)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _deleteNote(context, noteId);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _editNote(
+      BuildContext context, String noteId, Map<String, dynamic> noteData) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditNoteScreen(note: noteData, noteId: noteId),
+      ),
+    ).then((updatedNote) {
+      if (updatedNote != null) {
+        setState(() {
+          // Update the local state if necessary
+        });
+      }
+    });
+  }
+
+  void _showColorFilterDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Filter by Color'),
+          content: Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _buildColorOption(null, 'All'),
+              _buildColorOption(Colors.white, 'White'),
+              _buildColorOption(Colors.red[100]!, 'Red'),
+              _buildColorOption(Colors.blue[100]!, 'Blue'),
+              _buildColorOption(Colors.green[100]!, 'Green'),
+              _buildColorOption(Colors.yellow[100]!, 'Yellow'),
+              _buildColorOption(Colors.purple[100]!, 'Purple'),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildColorOption(Color? color, String label) {
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedColor = color;
+        });
+        Navigator.of(context).pop();
+      },
+      child: Container(
+        width: 60,
+        height: 60,
+        decoration: BoxDecoration(
+          color: color ?? Colors.transparent,
+          border: Border.all(color: Colors.grey),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: TextStyle(
+              color: color == null
+                  ? (widget.isDarkMode ? Colors.white : Colors.black)
+                  : getTextColor(color),
+              fontSize: 12,
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -76,7 +324,19 @@ class _NotesScreenState extends State<NotesScreen> {
                   });
                 },
               )
-            : Text('My Notes'),
+            : AnimatedTextKit(
+                animatedTexts: [
+                  TypewriterAnimatedText(
+                    'My Notes',
+                    textStyle: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    speed: Duration(milliseconds: 200),
+                  ),
+                ],
+                totalRepeatCount: 1,
+              ),
         actions: [
           IconButton(
             icon: Icon(_isSearching ? Icons.close : Icons.search),
@@ -90,8 +350,15 @@ class _NotesScreenState extends State<NotesScreen> {
             },
           ),
           IconButton(
+            icon: Icon(Icons.color_lens),
+            onPressed: _showColorFilterDialog,
+          ),
+          IconButton(
             icon: Icon(widget.isDarkMode ? Icons.light_mode : Icons.dark_mode),
             onPressed: () {
+              setState(() {
+                widget.isDarkMode = !widget.isDarkMode;
+              });
               widget.toggleTheme();
             },
           ),
@@ -117,86 +384,205 @@ class _NotesScreenState extends State<NotesScreen> {
           }
 
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return Center(child: Text('No notes yet. Add your first note!'));
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.note_add, size: 100, color: Colors.grey),
+                  SizedBox(height: 20),
+                  Text(
+                    'No notes yet. Add your first note!',
+                    style: TextStyle(fontSize: 18, color: Colors.grey),
+                  ),
+                ],
+              ),
+            );
           }
 
-          var filteredDocs = snapshot.data!.docs.where((doc) {
+          var allDocs = snapshot.data!.docs;
+          Set<String> allTags = Set<String>();
+
+          var filteredDocs = allDocs.where((doc) {
             Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-            return data['title']
+            List<String> noteTags = List<String>.from(data['tags'] ?? []);
+
+            allTags.addAll(noteTags);
+
+            bool matchesSearch = data['title']
                     .toString()
                     .toLowerCase()
                     .contains(_searchQuery) ||
                 data['content'].toString().toLowerCase().contains(_searchQuery);
+
+            bool matchesTags = _selectedTags.isEmpty ||
+                _selectedTags.every((tag) => noteTags.contains(tag));
+
+            bool matchesColor = _selectedColor == null ||
+                Color(data['color'] ?? Colors.white.value) == _selectedColor;
+
+            return matchesSearch && matchesTags && matchesColor;
           }).toList();
 
-          if (filteredDocs.isEmpty) {
-            return Center(child: Text('No matching notes found'));
-          }
+          filteredDocs.sort((a, b) {
+            bool isPinnedA =
+                (a.data() as Map<String, dynamic>)['pinned'] ?? false;
+            bool isPinnedB =
+                (b.data() as Map<String, dynamic>)['pinned'] ?? false;
+            if (isPinnedA != isPinnedB) {
+              return isPinnedA ? -1 : 1;
+            }
+            Timestamp timestampA =
+                (a.data() as Map<String, dynamic>)['timestamp'] ??
+                    Timestamp.now();
+            Timestamp timestampB =
+                (b.data() as Map<String, dynamic>)['timestamp'] ??
+                    Timestamp.now();
+            return timestampB.compareTo(timestampA);
+          });
 
-          return ListView.builder(
-            itemCount: filteredDocs.length,
-            itemBuilder: (context, index) {
-              Map<String, dynamic> data =
-                  filteredDocs[index].data() as Map<String, dynamic>;
-              Color noteColor = Color(data['color'] ?? Colors.white.value);
-              Color textColor = getTextColor(noteColor);
-              return Card(
-                elevation: 2,
-                margin: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                color: noteColor,
-                child: ListTile(
-                  title: Text(
-                    data['title'] ?? 'No Title',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: textColor,
-                    ),
-                  ),
-                  subtitle: Text(
-                    data['content'] ?? 'No Content',
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(color: textColor),
-                  ),
-                  leading: CircleAvatar(
-                    backgroundColor: textColor,
-                    child: Text(
-                      (data['title'] ?? 'N')[0].toUpperCase(),
-                      style: TextStyle(
-                        color: noteColor,
-                      ),
-                    ),
-                  ),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => NoteDetailScreen(
-                          note: data,
-                          noteId: filteredDocs[index].id,
+          return Column(
+            children: [
+              _buildTagFilter(allTags.toList()),
+              Expanded(
+                child: filteredDocs.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.search_off,
+                                size: 64, color: Colors.grey),
+                            SizedBox(height: 16),
+                            Text(
+                              'No matching notes found',
+                              style:
+                                  TextStyle(fontSize: 18, color: Colors.grey),
+                            ),
+                            if (_selectedTags.isNotEmpty ||
+                                _selectedColor != null)
+                              TextButton(
+                                onPressed: () {
+                                  setState(() {
+                                    _selectedTags.clear();
+                                    _selectedColor = null;
+                                  });
+                                },
+                                child: Text('Clear filters'),
+                              ),
+                          ],
                         ),
+                      )
+                    : MasonryGridView.count(
+                        crossAxisCount: 2,
+                        itemCount: filteredDocs.length,
+                        itemBuilder: (context, index) {
+                          Map<String, dynamic> data = filteredDocs[index].data()
+                              as Map<String, dynamic>;
+                          Color noteColor =
+                              Color(data['color'] ?? Colors.white.value);
+                          Color textColor = getTextColor(noteColor);
+                          bool isPinned = data['pinned'] ?? false;
+                          return GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => NoteDetailScreen(
+                                    note: data,
+                                    noteId: filteredDocs[index].id,
+                                  ),
+                                ),
+                              );
+                            },
+                            onLongPress: () {
+                              _showNoteOptions(
+                                  context, filteredDocs[index].id, data);
+                            },
+                            child: Card(
+                              elevation: 4,
+                              margin: EdgeInsets.all(8),
+                              color: noteColor,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Padding(
+                                padding: EdgeInsets.all(12),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    if (isPinned)
+                                      Align(
+                                        alignment: Alignment.topRight,
+                                        child: Icon(
+                                          Icons.push_pin,
+                                          color: textColor,
+                                          size: 20,
+                                        ),
+                                      ),
+                                    Text(
+                                      data['title'] ?? 'No Title',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: textColor,
+                                        fontSize: 18,
+                                      ),
+                                    ),
+                                    SizedBox(height: 8),
+                                    Text(
+                                      data['content'] ?? 'No Content',
+                                      maxLines: 5,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(color: textColor),
+                                    ),
+                                    SizedBox(height: 8),
+                                    Wrap(
+                                      spacing: 4,
+                                      runSpacing: 4,
+                                      children:
+                                          (data['tags'] as List<dynamic>? ?? [])
+                                              .map<Widget>((tag) {
+                                        return Chip(
+                                          label: Text(tag,
+                                              style: TextStyle(fontSize: 10)),
+                                          backgroundColor: Theme.of(context)
+                                              .primaryColor
+                                              .withOpacity(0.1),
+                                          padding: EdgeInsets.all(4),
+                                          materialTapTargetSize:
+                                              MaterialTapTargetSize.shrinkWrap,
+                                        );
+                                      }).toList(),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        },
                       ),
-                    ).then((updatedNote) {
-                      if (updatedNote != null) {
-                        // If the note was updated, you can handle it here if needed
-                      }
-                    });
-                  },
-                ),
-              );
-            },
+              ),
+            ],
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        child: Icon(Icons.add),
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => AddNoteScreen()),
-          );
-        },
+      floatingActionButton: ScaleTransition(
+        scale: _fabAnimation,
+        child: FloatingActionButton.extended(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => AddNoteScreen()),
+            );
+          },
+          icon: Icon(Icons.add),
+          label: Text('Add Note'),
+        ),
       ),
     );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _fabAnimationController.forward();
   }
 }
