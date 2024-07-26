@@ -25,6 +25,7 @@ class _NotesScreenState extends State<NotesScreen>
   Set<String> _selectedTags = Set<String>();
   late AnimationController _fabAnimationController;
   late Animation<double> _fabAnimation;
+  Color? _selectedColor;
 
   @override
   void initState() {
@@ -244,6 +245,61 @@ class _NotesScreenState extends State<NotesScreen>
     });
   }
 
+  void _showColorFilterDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Filter by Color'),
+          content: Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _buildColorOption(null, 'All'),
+              _buildColorOption(Colors.white, 'White'),
+              _buildColorOption(Colors.red[100]!, 'Red'),
+              _buildColorOption(Colors.blue[100]!, 'Blue'),
+              _buildColorOption(Colors.green[100]!, 'Green'),
+              _buildColorOption(Colors.yellow[100]!, 'Yellow'),
+              _buildColorOption(Colors.purple[100]!, 'Purple'),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildColorOption(Color? color, String label) {
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedColor = color;
+        });
+        Navigator.of(context).pop();
+      },
+      child: Container(
+        width: 60,
+        height: 60,
+        decoration: BoxDecoration(
+          color: color ?? Colors.transparent,
+          border: Border.all(color: Colors.grey),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: TextStyle(
+              color: color == null
+                  ? (widget.isDarkMode ? Colors.white : Colors.black)
+                  : getTextColor(color),
+              fontSize: 12,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser!;
@@ -291,6 +347,10 @@ class _NotesScreenState extends State<NotesScreen>
                 }
               });
             },
+          ),
+          IconButton(
+            icon: Icon(Icons.color_lens),
+            onPressed: _showColorFilterDialog,
           ),
           IconButton(
             icon: Icon(widget.isDarkMode ? Icons.light_mode : Icons.dark_mode),
@@ -356,7 +416,10 @@ class _NotesScreenState extends State<NotesScreen>
             bool matchesTags = _selectedTags.isEmpty ||
                 _selectedTags.every((tag) => noteTags.contains(tag));
 
-            return matchesSearch && matchesTags;
+            bool matchesColor = _selectedColor == null ||
+                Color(data['color'] ?? Colors.white.value) == _selectedColor;
+
+            return matchesSearch && matchesTags && matchesColor;
           }).toList();
 
           filteredDocs.sort((a, b) {
@@ -393,11 +456,13 @@ class _NotesScreenState extends State<NotesScreen>
                               style:
                                   TextStyle(fontSize: 18, color: Colors.grey),
                             ),
-                            if (_selectedTags.isNotEmpty)
+                            if (_selectedTags.isNotEmpty ||
+                                _selectedColor != null)
                               TextButton(
                                 onPressed: () {
                                   setState(() {
                                     _selectedTags.clear();
+                                    _selectedColor = null;
                                   });
                                 },
                                 child: Text('Clear filters'),
