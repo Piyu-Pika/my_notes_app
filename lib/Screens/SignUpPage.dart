@@ -34,7 +34,7 @@ class _HomescreenState extends State<Homescreen> {
           '''Welcome to My Notes App! Here's a quick guide to get you started:
 
 1. Add Notes: Tap the + button to create a new note.
-2. Edit Notes: Tap on a note to view it, then use the edit icon to make changes.
+2. Edit Notes: Tap on a note to view it, then use the edit icon to make changes or Dubble tap the screen to make the changes in the notes
 3. Delete Notes: In the note details screen, use the delete icon to remove a note.
 4. Save Notes: Tap on the save icon at the app bar or button at the bottom
 5. Search: Use the search icon in the app bar to find specific notes.
