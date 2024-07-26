@@ -72,7 +72,8 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
   }
 
   void _shareNote() {
-    Share.share('${_note['title']}\n\n${_note['content']}');
+    String links = (_note['links'] as List<dynamic>?)?.join('\n') ?? '';
+    Share.share('${_note['title']}\n\n${_note['content']}\n\nLinks:\n$links');
   }
 
   void _changeColor() {
@@ -135,26 +136,27 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
       appBar: AppBar(
         title: Text(_note['title'] ?? 'Note Details'),
         actions: [
-          IconButton(
-              icon: Icon(Icons.edit), onPressed: () => _editNote(context)),
-          IconButton(
-              icon: Icon(Icons.delete), onPressed: () => _deleteNote(context)),
           IconButton(icon: Icon(Icons.share), onPressed: _shareNote),
           IconButton(icon: Icon(Icons.color_lens), onPressed: _changeColor),
+          IconButton(
+              icon: Icon(Icons.delete), onPressed: () => _deleteNote(context)),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildNoteCard(noteColor, textColor),
-              SizedBox(height: 20),
-              _buildLinkCard(),
-              SizedBox(height: 20),
-              _buildTagsSection(),
-            ],
+      body: GestureDetector(
+        onDoubleTap: () => _editNote(context),
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildNoteCard(noteColor, textColor),
+                SizedBox(height: 20),
+                _buildLinksSection(),
+                SizedBox(height: 20),
+                _buildTagsSection(),
+              ],
+            ),
           ),
         ),
       ),
@@ -205,18 +207,31 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
     );
   }
 
-  Widget _buildLinkCard() {
-    if (_note['link'] == null || _note['link'].isEmpty)
-      return SizedBox.shrink();
+  Widget _buildLinksSection() {
+    List<String> links = List<String>.from(_note['links'] ?? []);
+    if (links.isEmpty) return SizedBox.shrink();
 
-    return Card(
-      elevation: 4,
-      child: ListTile(
-        leading: Icon(Icons.link),
-        title: Text('Attached Link'),
-        subtitle: Text(_note['link']),
-        onTap: () => _launchUrl(_note['link']),
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Links:',
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        SizedBox(height: 8),
+        Column(
+          children: links
+              .map((link) => Card(
+                    elevation: 2,
+                    child: ListTile(
+                      leading: Icon(Icons.link),
+                      title: Text(link),
+                      onTap: () => _launchUrl(link),
+                    ),
+                  ))
+              .toList(),
+        ),
+      ],
     );
   }
 
@@ -290,7 +305,6 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
             TextButton(
               child: Text("Delete", style: TextStyle(color: Colors.red)),
               onPressed: () {
-                Navigator.of(context).pop();
                 Navigator.of(context).pop();
                 _performDelete(context);
               },
