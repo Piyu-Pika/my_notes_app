@@ -8,6 +8,7 @@ import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:animated_text_kit/animated_text_kit.dart';
 
+// w
 class NotesScreen extends StatefulWidget {
   final Function toggleTheme;
   bool isDarkMode;

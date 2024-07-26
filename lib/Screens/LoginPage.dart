@@ -4,6 +4,7 @@ import 'package:my_notes_app/Screens/SignUpPage.dart';
 import 'package:my_notes_app/Screens/notesScreen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+//w
 class LoginPage extends StatefulWidget {
   final Function toggleTheme;
   final bool isDarkMode;

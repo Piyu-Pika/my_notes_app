@@ -7,6 +7,7 @@ import 'package:my_notes_app/Screens/notesScreen.dart';
 import 'package:my_notes_app/key.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+// w
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();

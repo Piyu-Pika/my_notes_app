@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gemini/flutter_gemini.dart';
 import 'package:flutter/services.dart';
 
+//w
 class NoteChatScreen extends StatefulWidget {
   final String noteContent;
   final String noteTitle;

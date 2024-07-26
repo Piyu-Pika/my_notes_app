@@ -7,6 +7,7 @@ import 'package:my_notes_app/Screens/NoteEditScreen.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
 
+// w
 class NoteDetailScreen extends StatefulWidget {
   final Map<String, dynamic> note;
   final String noteId;

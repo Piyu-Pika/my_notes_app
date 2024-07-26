@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_gemini/flutter_gemini.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+// w
 class AddNoteScreen extends StatefulWidget {
   @override
   _AddNoteScreenState createState() => _AddNoteScreenState();
