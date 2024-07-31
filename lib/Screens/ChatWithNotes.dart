@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gemini/flutter_gemini.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
-//w
 class NoteChatScreen extends StatefulWidget {
   final String noteContent;
   final String noteTitle;
@@ -21,13 +22,35 @@ class _NoteChatScreenState extends State<NoteChatScreen> {
   final _textController = TextEditingController();
   final _scrollController = ScrollController();
   final gemini = Gemini.instance;
-  final List<ChatMessage> _messages = [];
+  List<ChatMessage> _messages = [];
   bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _addInitialMessage();
+    _loadMessages();
+  }
+
+  Future<void> _loadMessages() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? messagesJson =
+        prefs.getString('chat_messages_${widget.noteTitle}');
+    if (messagesJson != null) {
+      setState(() {
+        _messages = (jsonDecode(messagesJson) as List)
+            .map((item) => ChatMessage.fromJson(item))
+            .toList();
+      });
+    } else {
+      _addInitialMessage();
+    }
+  }
+
+  Future<void> _saveMessages() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String messagesJson =
+        jsonEncode(_messages.map((m) => m.toJson()).toList());
+    await prefs.setString('chat_messages_${widget.noteTitle}', messagesJson);
   }
 
   void _addInitialMessage() {
@@ -38,21 +61,25 @@ class _NoteChatScreenState extends State<NoteChatScreen> {
         isUser: false,
       ));
     });
+    _saveMessages();
   }
 
   Future<void> _sendMessage() async {
     if (_textController.text.isEmpty) return;
-    _textController.clear();
 
     setState(() {
-      _messages.add(ChatMessage(
-        text: _textController.text,
-        isUser: true,
-      ));
+      _messages.add(
+        ChatMessage(
+          text: _textController.text,
+          isUser: true,
+        ),
+      );
       _isLoading = true;
+      _textController.clear();
     });
 
     _scrollToBottom();
+    _saveMessages();
 
     String prompt = '''
     Based on the following note content:
@@ -62,6 +89,7 @@ class _NoteChatScreenState extends State<NoteChatScreen> {
     ${_textController.text}
     
     Respond as if you're an AI assistant discussing this note.
+    you can also use the internet information if needed or the information not in the notes itself
     ''';
 
     try {
@@ -74,6 +102,7 @@ class _NoteChatScreenState extends State<NoteChatScreen> {
         ));
         _isLoading = false;
       });
+      _saveMessages();
     } catch (e) {
       setState(() {
         _messages.add(ChatMessage(
@@ -82,6 +111,7 @@ class _NoteChatScreenState extends State<NoteChatScreen> {
         ));
         _isLoading = false;
       });
+      _saveMessages();
     }
 
     _scrollToBottom();
@@ -192,6 +222,17 @@ class ChatMessage extends StatelessWidget {
 
   const ChatMessage({Key? key, required this.text, required this.isUser})
       : super(key: key);
+
+  // Add these methods for JSON serialization
+  Map<String, dynamic> toJson() => {
+        'text': text,
+        'isUser': isUser,
+      };
+
+  factory ChatMessage.fromJson(Map<String, dynamic> json) => ChatMessage(
+        text: json['text'],
+        isUser: json['isUser'],
+      );
 
   @override
   Widget build(BuildContext context) {

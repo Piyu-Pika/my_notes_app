@@ -8,7 +8,6 @@ import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:animated_text_kit/animated_text_kit.dart';
 
-// w
 class NotesScreen extends StatefulWidget {
   final Function toggleTheme;
   bool isDarkMode;
@@ -27,6 +26,7 @@ class _NotesScreenState extends State<NotesScreen>
   late AnimationController _fabAnimationController;
   late Animation<double> _fabAnimation;
   Color? _selectedColor;
+  String _currentView = 'notes'; // 'notes', 'archive', or 'trash'
 
   @override
   void initState() {
@@ -39,6 +39,7 @@ class _NotesScreenState extends State<NotesScreen>
       parent: _fabAnimationController,
       curve: Curves.easeInOut,
     );
+    _startPeriodicCleanup();
   }
 
   @override
@@ -144,32 +145,67 @@ class _NotesScreenState extends State<NotesScreen>
         .update({'pinned': !currentPinned});
   }
 
-  void _deleteNote(BuildContext context, String noteId) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text("Delete Note"),
-          content: Text("Are you sure you want to delete this note?"),
-          actions: <Widget>[
-            TextButton(
-              child: Text("Cancel"),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-            TextButton(
-              child: Text("Delete", style: TextStyle(color: Colors.red)),
-              onPressed: () {
-                Navigator.of(context).pop();
-                _performDelete(context, noteId);
-              },
-            ),
-          ],
-        );
-      },
-    );
+  void _archiveNote(String noteId) {
+    final user = FirebaseAuth.instance.currentUser!;
+    FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('notes')
+        .doc(noteId)
+        .update({'archived': true}).then((_) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Note archived')),
+      );
+    }).catchError((error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to archive note: $error')),
+      );
+    });
   }
 
-  void _performDelete(BuildContext context, String noteId) {
+  void _moveToTrash(String noteId) {
+    final user = FirebaseAuth.instance.currentUser!;
+    FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('notes')
+        .doc(noteId)
+        .update({
+      'inTrash': true,
+      'trashDate': FieldValue.serverTimestamp(),
+    }).then((_) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Note moved to trash')),
+      );
+    }).catchError((error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to move note to trash: $error')),
+      );
+    });
+  }
+
+  void _restoreFromTrash(String noteId) {
+    final user = FirebaseAuth.instance.currentUser!;
+    FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('notes')
+        .doc(noteId)
+        .update({
+      'inTrash': false,
+      'trashDate': FieldValue.delete(),
+    }).then((_) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Note restored from trash')),
+      );
+    }).catchError((error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to restore note: $error')),
+      );
+    });
+  }
+
+  void _deleteNotePermanently(String noteId) {
     final user = FirebaseAuth.instance.currentUser!;
     FirebaseFirestore.instance
         .collection('users')
@@ -179,7 +215,7 @@ class _NotesScreenState extends State<NotesScreen>
         .delete()
         .then((_) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Note deleted successfully')),
+        SnackBar(content: Text('Note permanently deleted')),
       );
     }).catchError((error) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -197,32 +233,81 @@ class _NotesScreenState extends State<NotesScreen>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              ListTile(
-                leading: Icon(Icons.edit),
-                title: Text('Edit'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _editNote(context, noteId, noteData);
-                },
-              ),
-              ListTile(
-                leading: Icon(noteData['pinned'] ?? false
-                    ? Icons.push_pin
-                    : Icons.push_pin_outlined),
-                title: Text(noteData['pinned'] ?? false ? 'Unpin' : 'Pin'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _togglePinNote(noteId, noteData['pinned'] ?? false);
-                },
-              ),
-              ListTile(
-                leading: Icon(Icons.delete, color: Colors.red),
-                title: Text('Delete', style: TextStyle(color: Colors.red)),
-                onTap: () {
-                  Navigator.pop(context);
-                  _deleteNote(context, noteId);
-                },
-              ),
+              if (_currentView == 'notes') ...[
+                ListTile(
+                  leading: Icon(Icons.edit),
+                  title: Text('Edit'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _editNote(context, noteId, noteData);
+                  },
+                ),
+                ListTile(
+                  leading: Icon(noteData['pinned'] ?? false
+                      ? Icons.push_pin
+                      : Icons.push_pin_outlined),
+                  title: Text(noteData['pinned'] ?? false ? 'Unpin' : 'Pin'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _togglePinNote(noteId, noteData['pinned'] ?? false);
+                  },
+                ),
+                ListTile(
+                  leading: Icon(Icons.archive),
+                  title: Text('Archive'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _archiveNote(noteId);
+                  },
+                ),
+                ListTile(
+                  leading: Icon(Icons.delete),
+                  title: Text('Move to Trash'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _moveToTrash(noteId);
+                  },
+                ),
+              ] else if (_currentView == 'archive') ...[
+                ListTile(
+                  leading: Icon(Icons.unarchive),
+                  title: Text('Unarchive'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    FirebaseFirestore.instance
+                        .collection('users')
+                        .doc(FirebaseAuth.instance.currentUser!.uid)
+                        .collection('notes')
+                        .doc(noteId)
+                        .update({'archived': false});
+                  },
+                ),
+                ListTile(
+                  leading: Icon(Icons.delete),
+                  title: Text('Move to Trash'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _moveToTrash(noteId);
+                  },
+                ),
+              ] else if (_currentView == 'trash') ...[
+                ListTile(
+                  leading: Icon(Icons.restore),
+                  title: Text('Restore'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _restoreFromTrash(noteId);
+                  },
+                ),
+                ListTile(
+                  leading: Icon(Icons.delete_forever),
+                  title: Text('Delete Permanently'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _deleteNotePermanently(noteId);
+                  },
+                ),
+              ],
             ],
           ),
         );
@@ -327,7 +412,11 @@ class _NotesScreenState extends State<NotesScreen>
             : AnimatedTextKit(
                 animatedTexts: [
                   TypewriterAnimatedText(
-                    'My Notes',
+                    _currentView == 'notes'
+                        ? 'My Notes'
+                        : _currentView == 'archive'
+                            ? 'Archive'
+                            : 'Trash',
                     textStyle: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -367,6 +456,60 @@ class _NotesScreenState extends State<NotesScreen>
             onPressed: _showLogoutConfirmationDialog,
           ),
         ],
+      ),
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: <Widget>[
+            DrawerHeader(
+              decoration: BoxDecoration(
+                color: Theme.of(context).primaryColor,
+              ),
+              child: Text(
+                'Note App',
+                style: TextStyle(color: Colors.white, fontSize: 24),
+              ),
+            ),
+            ListTile(
+              leading: Icon(Icons.note),
+              title: Text('Notes'),
+              onTap: () {
+                setState(() {
+                  _currentView = 'notes';
+                });
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.archive),
+              title: Text('Archive'),
+              onTap: () {
+                setState(() {
+                  _currentView = 'archive';
+                });
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.delete),
+              title: Text('Trash'),
+              onTap: () {
+                setState(() {
+                  _currentView = 'trash';
+                });
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.share),
+              title: Text('Share App'),
+              onTap: () {
+                // Implement share app functionality
+                Navigator.pop(context);
+              },
+            ),
+          ],
+        ),
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
@@ -420,9 +563,16 @@ class _NotesScreenState extends State<NotesScreen>
             bool matchesColor = _selectedColor == null ||
                 Color(data['color'] ?? Colors.white.value) == _selectedColor;
 
-            return matchesSearch && matchesTags && matchesColor;
+            bool matchesView = (_currentView == 'notes' &&
+                    !(data['archived'] ?? false) &&
+                    !(data['inTrash'] ?? false)) ||
+                (_currentView == 'archive' && (data['archived'] ?? false)) ||
+                (_currentView == 'trash' && (data['inTrash'] ?? false));
+
+            return matchesSearch && matchesTags && matchesColor && matchesView;
           }).toList();
 
+          // Sort notes
           filteredDocs.sort((a, b) {
             bool isPinnedA =
                 (a.data() as Map<String, dynamic>)['pinned'] ?? false;
@@ -440,6 +590,23 @@ class _NotesScreenState extends State<NotesScreen>
             return timestampB.compareTo(timestampA);
           });
 
+          // Delete notes that have been in trash for more than 30 days
+          if (_currentView == 'trash') {
+            filteredDocs.removeWhere((doc) {
+              Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+              Timestamp? trashDate = data['trashDate'];
+              if (trashDate != null) {
+                Duration difference =
+                    DateTime.now().difference(trashDate.toDate());
+                if (difference.inDays > 30) {
+                  _deleteNotePermanently(doc.id);
+                  return true;
+                }
+              }
+              return false;
+            });
+          }
+
           return Column(
             children: [
               _buildTagFilter(allTags.toList()),
@@ -453,7 +620,7 @@ class _NotesScreenState extends State<NotesScreen>
                                 size: 64, color: Colors.grey),
                             SizedBox(height: 16),
                             Text(
-                              'No matching notes found',
+                              'No ${_currentView == 'notes' ? 'notes' : _currentView == 'archive' ? 'archived notes' : 'items in trash'} found',
                               style:
                                   TextStyle(fontSize: 18, color: Colors.grey),
                             ),
@@ -509,7 +676,7 @@ class _NotesScreenState extends State<NotesScreen>
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    if (isPinned)
+                                    if (isPinned && _currentView == 'notes')
                                       Align(
                                         alignment: Alignment.topRight,
                                         child: Icon(
@@ -552,6 +719,14 @@ class _NotesScreenState extends State<NotesScreen>
                                         );
                                       }).toList(),
                                     ),
+                                    if (_currentView == 'trash')
+                                      Text(
+                                        'Deleted on: ${_formatDate(data['trashDate'])}',
+                                        style: TextStyle(
+                                          color: textColor.withOpacity(0.7),
+                                          fontSize: 12,
+                                        ),
+                                      ),
                                   ],
                                 ),
                               ),
@@ -564,19 +739,21 @@ class _NotesScreenState extends State<NotesScreen>
           );
         },
       ),
-      floatingActionButton: ScaleTransition(
-        scale: _fabAnimation,
-        child: FloatingActionButton.extended(
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => AddNoteScreen()),
-            );
-          },
-          icon: Icon(Icons.add),
-          label: Text('Add Note'),
-        ),
-      ),
+      floatingActionButton: _currentView == 'notes'
+          ? ScaleTransition(
+              scale: _fabAnimation,
+              child: FloatingActionButton.extended(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => AddNoteScreen()),
+                  );
+                },
+                icon: Icon(Icons.add),
+                label: Text('Add Note'),
+              ),
+            )
+          : null,
     );
   }
 
@@ -584,5 +761,41 @@ class _NotesScreenState extends State<NotesScreen>
   void didChangeDependencies() {
     super.didChangeDependencies();
     _fabAnimationController.forward();
+  }
+
+  String _formatDate(Timestamp? timestamp) {
+    if (timestamp == null) return 'Unknown';
+    DateTime date = timestamp.toDate();
+    return '${date.day}/${date.month}/${date.year}';
+  }
+
+  // Add this method to periodically clean up old trash items
+  void _cleanupTrash() {
+    final user = FirebaseAuth.instance.currentUser!;
+    FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('notes')
+        .where('inTrash', isEqualTo: true)
+        .get()
+        .then((querySnapshot) {
+      for (var doc in querySnapshot.docs) {
+        Timestamp? trashDate = doc.data()['trashDate'];
+        if (trashDate != null) {
+          Duration difference = DateTime.now().difference(trashDate.toDate());
+          if (difference.inDays > 30) {
+            _deleteNotePermanently(doc.id);
+          }
+        }
+      }
+    });
+  }
+
+  // Call this method in initState() to start periodic cleanup
+  void _startPeriodicCleanup() {
+    Future.delayed(Duration(days: 1), () {
+      _cleanupTrash();
+      _startPeriodicCleanup();
+    });
   }
 }
