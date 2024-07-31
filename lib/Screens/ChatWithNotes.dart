@@ -42,6 +42,7 @@ class _NoteChatScreenState extends State<NoteChatScreen> {
 
   Future<void> _sendMessage() async {
     if (_textController.text.isEmpty) return;
+    _textController.clear();
 
     setState(() {
       _messages.add(ChatMessage(
@@ -83,7 +84,6 @@ class _NoteChatScreenState extends State<NoteChatScreen> {
       });
     }
 
-    _textController.clear();
     _scrollToBottom();
   }
 

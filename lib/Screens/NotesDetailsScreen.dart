@@ -307,6 +307,7 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
               child: Text("Delete", style: TextStyle(color: Colors.red)),
               onPressed: () {
                 Navigator.of(context).pop();
+                Navigator.of(context).pop();
                 _performDelete(context);
               },
             ),
