@@ -145,6 +145,14 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
       ),
       body: GestureDetector(
         onDoubleTap: () => _editNote(context),
+        onTap: () {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Double tap to edit the note'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        },
         child: SingleChildScrollView(
           child: Padding(
             padding: const EdgeInsets.all(16.0),

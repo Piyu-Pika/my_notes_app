@@ -48,6 +48,10 @@ class _NotesScreenState extends State<NotesScreen>
     super.dispose();
   }
 
+  Future<void> _launchgitUrl() async {
+    final Uri uri = Uri.parse('https://github.com/Piyu-Pika/my_notes_app');
+  }
+
   void _showLogoutConfirmationDialog() {
     showDialog(
       context: context,
@@ -504,7 +508,7 @@ class _NotesScreenState extends State<NotesScreen>
               leading: Icon(Icons.share),
               title: Text('Share App'),
               onTap: () {
-                // Implement share app functionality
+                _launchgitUrl();
                 Navigator.pop(context);
               },
             ),

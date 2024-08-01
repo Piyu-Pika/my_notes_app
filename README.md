@@ -12,8 +12,13 @@ A sleek and intuitive note-taking application created using Flutter and Firebase
 - 💬 Chat with your notes using AI assistance
 - 🏷️ Tag system for better note organization
 - 📌 Pin important notes to the top
+- 🗂️ Archive functionality for better note management
+- 🗑️ Trash system with auto-deletion after 30 days
+- 📊 Staggered grid view for dynamic note display
+- 🖌️ Color filter for easy note browsing
+- 📱 Responsive design for various screen sizes
 
-## 🤖 New AI Features
+## 🤖 AI Features
 - **AI Title Generator**: Automatically generate catchy and relevant titles for your notes using Google Gemini AI
 - **Chat with Notes**: Engage in a conversation about your notes with an AI assistant, powered by Google Gemini
 
@@ -21,10 +26,15 @@ A sleek and intuitive note-taking application created using Flutter and Firebase
 - Easily categorize and visually organize your notes with a selection of colors
 - Choose from a range of preset colors when creating or editing a note
 - Quickly identify note categories at a glance in the main notes list
+- Filter notes by color for efficient organization
+
+## 📋 Note Management
+- **Archive**: Move less frequently used notes to the archive for a cleaner main view
+- **Trash**: Safely delete notes with the ability to restore them within 30 days
+- **Auto-deletion**: Notes in the trash are automatically deleted after 30 days
 
 ## 📸 Screenshots
 ![My_Notes_app](https://github.com/user-attachments/assets/872a77f1-eded-4b97-9f0a-5053d8dd00e1)
-
 
 ## 🛠️ Technologies Used
 - 📱 Flutter for cross-platform development
@@ -36,6 +46,7 @@ A sleek and intuitive note-taking application created using Flutter and Firebase
 - 🔗 url_launcher for opening links within notes
 - 📤 share_plus for sharing note content
 - 💾 shared_preferences for local data storage
+- 🎨 flutter_colorpicker for color selection
 
 ## 🚀 Getting Started
 1. 📥 Clone the repository
@@ -62,6 +73,9 @@ A sleek and intuitive note-taking application created using Flutter and Firebase
 - 🔍 Use the search functionality in the app bar to find specific notes
 - 💬 Chat with your notes to get AI-powered insights and answers
 - 🌓 Toggle between light and dark modes for comfortable viewing
+- 🗂️ Archive notes you don't need frequently
+- 🗑️ Move notes to trash and restore them if needed
+- 🎨 Use color filters to browse notes by category
 
 ## 🆕 UI Enhancements
 - Color-coded notes for easy visual categorization
@@ -70,10 +84,10 @@ A sleek and intuitive note-taking application created using Flutter and Firebase
 - Animated text effects for engaging user experience
 - Responsive design for various screen sizes
 - Customizable color filters for note browsing
+- Drawer menu for easy navigation between notes, archive, and trash
 
 ## 🤝 Contributing
 Contributions, issues, and feature requests are welcome. Feel free to check [issues page](https://github.com/YourUsername/my_notes_app/issues) if you want to contribute.
-
 
 ## 👨‍💻 Author
 Piyush Bhardwaj
@@ -88,3 +102,4 @@ Piyush Bhardwaj
 - share_plus package
 - intl package for date formatting
 - shared_preferences package
+- flutter_colorpicker package
