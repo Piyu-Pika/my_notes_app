@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:my_notes_app/Screens/LockedNotes.dart';
 import 'package:my_notes_app/Screens/NoteAddScreen.dart';
 import 'package:my_notes_app/Screens/NotesDetailsScreen.dart';
 import 'package:my_notes_app/Screens/NoteEditScreen.dart';
@@ -40,6 +41,7 @@ class _NotesScreenState extends State<NotesScreen>
       curve: Curves.easeInOut,
     );
     _startPeriodicCleanup();
+    _checkPinExists();
   }
 
   @override
@@ -49,7 +51,7 @@ class _NotesScreenState extends State<NotesScreen>
   }
 
   Future<void> _launchgitUrl() async {
-    final Uri uri = Uri.parse('https://github.com/Piyu-Pika/my_notes_app');
+    Uri.parse('https://github.com/Piyu-Pika/my_notes_app');
   }
 
   void _showLogoutConfirmationDialog() {
@@ -228,6 +230,57 @@ class _NotesScreenState extends State<NotesScreen>
     });
   }
 
+  void _lockNote(String noteId, Map<String, dynamic> noteData) async {
+    final user = FirebaseAuth.instance.currentUser!;
+
+    // First, verify the PIN
+    String? enteredPin = await _promptForPin('Enter PIN to lock note');
+    if (enteredPin == null) return; // User cancelled
+
+    try {
+      // Verify the entered PIN
+      DocumentSnapshot doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+
+      if (doc.exists) {
+        String? storedPin =
+            (doc.data() as Map<String, dynamic>)['lockedNotesPin'];
+        if (storedPin != enteredPin) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Incorrect PIN')),
+          );
+          return;
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('User data not found')),
+        );
+        return;
+      }
+
+      // PIN is correct, proceed to lock the note
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('notes')
+          .doc(noteId)
+          .update({'isLocked': true});
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Note has been locked')),
+      );
+
+      // Optionally, you can remove the note from the current view
+      setState(() {});
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to lock note: $e')),
+      );
+    }
+  }
+
   void _showNoteOptions(
       BuildContext context, String noteId, Map<String, dynamic> noteData) {
     showModalBottomSheet(
@@ -254,6 +307,14 @@ class _NotesScreenState extends State<NotesScreen>
                   onTap: () {
                     Navigator.pop(context);
                     _togglePinNote(noteId, noteData['pinned'] ?? false);
+                  },
+                ),
+                ListTile(
+                  leading: Icon(Icons.lock),
+                  title: Text('Lock Note'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _lockNote(noteId, noteData);
                   },
                 ),
                 ListTile(
@@ -390,6 +451,269 @@ class _NotesScreenState extends State<NotesScreen>
     );
   }
 
+  void _checkPinExists() async {
+    final user = FirebaseAuth.instance.currentUser!;
+    final docSnapshot = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .get();
+
+    if (!docSnapshot.exists ||
+        !docSnapshot.data()!.containsKey('lockedNotesPin')) {
+      // Document doesn't exist or PIN doesn't exist, prompt user to create one
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showCreatePinDialog();
+      });
+    }
+  }
+
+  void _showCreatePinDialog() {
+    String enteredPin = '';
+    String confirmedPin = '';
+    bool isConfirming = false;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return StatefulBuilder(builder: (context, setState) {
+          return AlertDialog(
+            title: Text(isConfirming ? 'Confirm PIN' : 'Create PIN'),
+            content: TextField(
+              keyboardType: TextInputType.number,
+              maxLength: 4,
+              obscureText: true,
+              onChanged: (value) {
+                if (isConfirming) {
+                  confirmedPin = value;
+                } else {
+                  enteredPin = value;
+                }
+              },
+              decoration: InputDecoration(
+                hintText:
+                    isConfirming ? 'Confirm 4-digit PIN' : 'Enter 4-digit PIN',
+              ),
+            ),
+            actions: <Widget>[
+              TextButton(
+                child: Text('Cancel'),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+              ),
+              TextButton(
+                child: Text(isConfirming ? 'Confirm' : 'Next'),
+                onPressed: () {
+                  if (isConfirming) {
+                    if (enteredPin == confirmedPin) {
+                      Navigator.of(context).pop();
+                      _savePin(enteredPin);
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                            content:
+                                Text('PINs do not match. Please try again.')),
+                      );
+                      setState(() {
+                        isConfirming = false;
+                        confirmedPin = '';
+                      });
+                    }
+                  } else {
+                    if (enteredPin.length == 4) {
+                      setState(() {
+                        isConfirming = true;
+                      });
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Please enter a 4-digit PIN.')),
+                      );
+                    }
+                  }
+                },
+              ),
+            ],
+          );
+        });
+      },
+    );
+  }
+
+  void _savePin(String pin) async {
+    final user = FirebaseAuth.instance.currentUser!;
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .set({'lockedNotesPin': pin}, SetOptions(merge: true));
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('PIN has been set successfully')),
+    );
+  }
+
+  void _showPinDialog() {
+    String enteredPin = '';
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Enter PIN'),
+          content: TextField(
+            keyboardType: TextInputType.number,
+            maxLength: 4,
+            obscureText: true,
+            onChanged: (value) {
+              enteredPin = value;
+            },
+            decoration: InputDecoration(
+              hintText: 'Enter 4-digit PIN',
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: Text('Enter'),
+              onPressed: () {
+                Navigator.of(context).pop();
+                _verifyPin(enteredPin);
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _verifyPin(String enteredPin) async {
+    final user = FirebaseAuth.instance.currentUser!;
+    final docSnapshot = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .get();
+
+    if (docSnapshot.exists) {
+      final data = docSnapshot.data() as Map<String, dynamic>;
+      final storedPin = data['lockedNotesPin'] as String?;
+
+      if (storedPin == enteredPin) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => LockedNotesScreen()),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Incorrect PIN')),
+        );
+      }
+    }
+  }
+
+  void _resetPin() async {
+    final user = FirebaseAuth.instance.currentUser!;
+
+    // First, verify the current PIN
+    String? currentPin = await _promptForPin('Enter current PIN');
+    if (currentPin == null) return; // User cancelled
+
+    try {
+      // Verify the current PIN
+      DocumentSnapshot doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+
+      if (doc.exists) {
+        String? storedPin =
+            (doc.data() as Map<String, dynamic>)['lockedNotesPin'];
+        if (storedPin != currentPin) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Incorrect PIN')),
+          );
+          return;
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('User data not found')),
+        );
+        return;
+      }
+
+      // Prompt for new PIN
+      String? newPin = await _promptForPin('Enter new PIN');
+      if (newPin == null) return; // User cancelled
+
+      // Confirm new PIN
+      String? confirmPin = await _promptForPin('Confirm new PIN');
+      if (confirmPin == null) return; // User cancelled
+
+      if (newPin != confirmPin) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('PINs do not match')),
+        );
+        return;
+      }
+
+      // Update PIN in Firestore
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .update({'lockedNotesPin': newPin});
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('PIN has been reset successfully')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to reset PIN: $e')),
+      );
+    }
+  }
+
+  Future<String?> _promptForPin(String message) async {
+    String? pin;
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(message),
+          content: TextField(
+            keyboardType: TextInputType.number,
+            maxLength: 4,
+            obscureText: true,
+            onChanged: (value) {
+              pin = value;
+            },
+            decoration: InputDecoration(
+              hintText: 'Enter 4-digit PIN',
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop();
+                pin = null;
+              },
+            ),
+            TextButton(
+              child: Text('OK'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+    return pin;
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser!;
@@ -485,6 +809,14 @@ class _NotesScreenState extends State<NotesScreen>
               },
             ),
             ListTile(
+              leading: Icon(Icons.lock),
+              title: Text('Locked Notes'),
+              onTap: () {
+                Navigator.pop(context);
+                _showPinDialog();
+              },
+            ),
+            ListTile(
               leading: Icon(Icons.archive),
               title: Text('Archive'),
               onTap: () {
@@ -510,6 +842,14 @@ class _NotesScreenState extends State<NotesScreen>
               onTap: () {
                 _launchgitUrl();
                 Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.lock_reset),
+              title: Text('Reset Locked Notes PIN'),
+              onTap: () {
+                Navigator.pop(context);
+                _resetPin();
               },
             ),
           ],
