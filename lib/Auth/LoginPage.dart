@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:my_notes_app/Screens/SignUpPage.dart';
+import 'package:my_notes_app/Auth/SignUpPage.dart';
 import 'package:my_notes_app/Screens/notesScreen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

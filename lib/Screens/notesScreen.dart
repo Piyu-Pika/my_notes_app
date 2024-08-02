@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:my_notes_app/Auth/ResetPin';
 import 'package:my_notes_app/Screens/LockedNotes.dart';
 import 'package:my_notes_app/Screens/NoteAddScreen.dart';
 import 'package:my_notes_app/Screens/NotesDetailsScreen.dart';
@@ -230,7 +231,7 @@ class _NotesScreenState extends State<NotesScreen>
     });
   }
 
- void _lockNote(String noteId, Map<String, dynamic> noteData) async {
+  void _lockNote(String noteId, Map<String, dynamic> noteData) async {
     final user = FirebaseAuth.instance.currentUser!;
 
     // First, verify the PIN
@@ -245,7 +246,8 @@ class _NotesScreenState extends State<NotesScreen>
           .get();
 
       if (doc.exists) {
-        String? storedPin = (doc.data() as Map<String, dynamic>)['lockedNotesPin'];
+        String? storedPin =
+            (doc.data() as Map<String, dynamic>)['lockedNotesPin'];
         if (storedPin != enteredPin) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Incorrect PIN')),
@@ -285,7 +287,8 @@ class _NotesScreenState extends State<NotesScreen>
     }
   }
 
-  void _showNoteOptions(BuildContext context, String noteId, Map<String, dynamic> noteData) {
+  void _showNoteOptions(
+      BuildContext context, String noteId, Map<String, dynamic> noteData) {
     showModalBottomSheet(
       context: context,
       builder: (BuildContext context) {
@@ -303,7 +306,9 @@ class _NotesScreenState extends State<NotesScreen>
                   },
                 ),
                 ListTile(
-                  leading: Icon(noteData['pinned'] ?? false ? Icons.push_pin : Icons.push_pin_outlined),
+                  leading: Icon(noteData['pinned'] ?? false
+                      ? Icons.push_pin
+                      : Icons.push_pin_outlined),
                   title: Text(noteData['pinned'] ?? false ? 'Unpin' : 'Pin'),
                   onTap: () {
                     Navigator.pop(context);
@@ -615,67 +620,6 @@ class _NotesScreenState extends State<NotesScreen>
     }
   }
 
-  void _resetPin() async {
-    final user = FirebaseAuth.instance.currentUser!;
-
-    // First, verify the current PIN
-    String? currentPin = await _promptForPin('Enter current PIN');
-    if (currentPin == null) return; // User cancelled
-
-    try {
-      // Verify the current PIN
-      DocumentSnapshot doc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .get();
-
-      if (doc.exists) {
-        String? storedPin =
-            (doc.data() as Map<String, dynamic>)['lockedNotesPin'];
-        if (storedPin != currentPin) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Incorrect PIN')),
-          );
-          return;
-        }
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('User data not found')),
-        );
-        return;
-      }
-
-      // Prompt for new PIN
-      String? newPin = await _promptForPin('Enter new PIN');
-      if (newPin == null) return; // User cancelled
-
-      // Confirm new PIN
-      String? confirmPin = await _promptForPin('Confirm new PIN');
-      if (confirmPin == null) return; // User cancelled
-
-      if (newPin != confirmPin) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('PINs do not match')),
-        );
-        return;
-      }
-
-      // Update PIN in Firestore
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .update({'lockedNotesPin': newPin});
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('PIN has been reset successfully')),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to reset PIN: $e')),
-      );
-    }
-  }
-
   Future<String?> _promptForPin(String message) async {
     String? pin;
     await showDialog(
@@ -715,364 +659,391 @@ class _NotesScreenState extends State<NotesScreen>
     return pin;
   }
 
+  void _resetPin() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => ResetPinScreen()),
+    );
+  }
+
   @override
-Widget build(BuildContext context) {
-  final user = FirebaseAuth.instance.currentUser!;
-  return Scaffold(
-    appBar: AppBar(
-      title: _isSearching
-          ? TextField(
-              autofocus: true,
-              decoration: InputDecoration(
-                hintText: 'Search notes...',
-                border: InputBorder.none,
-                hintStyle: TextStyle(
-                    color: widget.isDarkMode ? Colors.white70 : Colors.black54),
-              ),
-              style: TextStyle(
-                  color: widget.isDarkMode ? Colors.white : Colors.black),
-              onChanged: (value) {
-                setState(() {
-                  _searchQuery = value.toLowerCase();
-                });
-              },
-            )
-          : AnimatedTextKit(
-              animatedTexts: [
-                TypewriterAnimatedText(
-                  _currentView == 'notes'
-                      ? 'My Notes'
-                      : _currentView == 'archive'
-                          ? 'Archive'
-                          : 'Trash',
-                  textStyle: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  speed: Duration(milliseconds: 200),
+  Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser!;
+    return Scaffold(
+      appBar: AppBar(
+        title: _isSearching
+            ? TextField(
+                autofocus: true,
+                decoration: InputDecoration(
+                  hintText: 'Search notes...',
+                  border: InputBorder.none,
+                  hintStyle: TextStyle(
+                      color:
+                          widget.isDarkMode ? Colors.white70 : Colors.black54),
                 ),
-              ],
-              totalRepeatCount: 1,
-            ),
-      actions: [
-        IconButton(
-          icon: Icon(_isSearching ? Icons.close : Icons.search),
-          onPressed: () {
-            setState(() {
-              _isSearching = !_isSearching;
-              if (!_isSearching) {
-                _searchQuery = '';
-              }
-            });
-          },
-        ),
-        IconButton(
-          icon: Icon(Icons.color_lens),
-          onPressed: _showColorFilterDialog,
-        ),
-        IconButton(
-          icon: Icon(widget.isDarkMode ? Icons.light_mode : Icons.dark_mode),
-          onPressed: () {
-            setState(() {
-              widget.isDarkMode = !widget.isDarkMode;
-            });
-            widget.toggleTheme();
-          },
-        ),
-        IconButton(
-          icon: const Icon(Icons.logout),
-          onPressed: _showLogoutConfirmationDialog,
-        ),
-      ],
-    ),
-    drawer: Drawer(
-      child: ListView(
-        padding: EdgeInsets.zero,
-        children: <Widget>[
-          DrawerHeader(
-            decoration: BoxDecoration(
-              color: Theme.of(context).primaryColor,
-            ),
-            child: Text(
-              'Note App',
-              style: TextStyle(color: Colors.white, fontSize: 24),
-            ),
-          ),
-          ListTile(
-            leading: Icon(Icons.note),
-            title: Text('Notes'),
-            onTap: () {
+                style: TextStyle(
+                    color: widget.isDarkMode ? Colors.white : Colors.black),
+                onChanged: (value) {
+                  setState(() {
+                    _searchQuery = value.toLowerCase();
+                  });
+                },
+              )
+            : AnimatedTextKit(
+                animatedTexts: [
+                  TypewriterAnimatedText(
+                    _currentView == 'notes'
+                        ? 'My Notes'
+                        : _currentView == 'archive'
+                            ? 'Archive'
+                            : 'Trash',
+                    textStyle: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    speed: Duration(milliseconds: 200),
+                  ),
+                ],
+                totalRepeatCount: 1,
+              ),
+        actions: [
+          IconButton(
+            icon: Icon(_isSearching ? Icons.close : Icons.search),
+            onPressed: () {
               setState(() {
-                _currentView = 'notes';
+                _isSearching = !_isSearching;
+                if (!_isSearching) {
+                  _searchQuery = '';
+                }
               });
-              Navigator.pop(context);
             },
           ),
-          ListTile(
-            leading: Icon(Icons.lock),
-            title: Text('Locked Notes'),
-            onTap: () {
-              Navigator.pop(context);
-              _showPinDialog();
-            },
+          IconButton(
+            icon: Icon(Icons.color_lens),
+            onPressed: _showColorFilterDialog,
           ),
-          ListTile(
-            leading: Icon(Icons.archive),
-            title: Text('Archive'),
-            onTap: () {
+          IconButton(
+            icon: Icon(widget.isDarkMode ? Icons.light_mode : Icons.dark_mode),
+            onPressed: () {
               setState(() {
-                _currentView = 'archive';
+                widget.isDarkMode = !widget.isDarkMode;
               });
-              Navigator.pop(context);
-            },
-          ),
-          ListTile(
-            leading: Icon(Icons.delete),
-            title: Text('Trash'),
-            onTap: () {
-              setState(() {
-                _currentView = 'trash';
-              });
-              Navigator.pop(context);
-            },
-          ),
-          ListTile(
-            leading: Icon(Icons.share),
-            title: Text('Share App'),
-            onTap: () {
-              _launchgitUrl();
-              Navigator.pop(context);
-            },
-          ),
-          ListTile(
-            leading: Icon(Icons.lock_reset),
-            title: Text('Reset Locked Notes PIN'),
-            onTap: () {
-              Navigator.pop(context);
-              _resetPin();
+              widget.toggleTheme();
             },
           ),
         ],
       ),
-    ),
-    body: StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .collection('notes')
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          return Center(child: Text('Something went wrong'));
-        }
-
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator());
-        }
-
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.note_add, size: 100, color: Colors.grey),
-                SizedBox(height: 20),
-                Text(
-                  'No notes yet. Add your first note!',
-                  style: TextStyle(fontSize: 18, color: Colors.grey),
-                ),
-              ],
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: <Widget>[
+            DrawerHeader(
+              decoration: BoxDecoration(
+                color: Theme.of(context).primaryColor,
+              ),
+              child: Text(
+                'Note App',
+                style: TextStyle(color: Colors.white, fontSize: 24),
+              ),
             ),
-          );
-        }
-
-        var allDocs = snapshot.data!.docs;
-        Set<String> allTags = Set<String>();
-
-        var filteredDocs = allDocs.where((doc) {
-          Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-          List<String> noteTags = List<String>.from(data['tags'] ?? []);
-
-          allTags.addAll(noteTags);
-
-          // Add this condition to filter out locked notes
-          if (data['isLocked'] == true) return false;
-
-          bool matchesSearch = data['title']
-                  .toString()
-                  .toLowerCase()
-                  .contains(_searchQuery) ||
-              data['content'].toString().toLowerCase().contains(_searchQuery);
-
-          bool matchesTags = _selectedTags.isEmpty ||
-              _selectedTags.every((tag) => noteTags.contains(tag));
-
-          bool matchesColor = _selectedColor == null ||
-              Color(data['color'] ?? Colors.white.value) == _selectedColor;
-
-          bool matchesView = (_currentView == 'notes' &&
-                  !(data['archived'] ?? false) &&
-                  !(data['inTrash'] ?? false)) ||
-              (_currentView == 'archive' && (data['archived'] ?? false)) ||
-              (_currentView == 'trash' && (data['inTrash'] ?? false));
-
-          return matchesSearch && matchesTags && matchesColor && matchesView;
-        }).toList();
-
-        // Sort notes
-        filteredDocs.sort((a, b) {
-          bool isPinnedA = (a.data() as Map<String, dynamic>)['pinned'] ?? false;
-          bool isPinnedB = (b.data() as Map<String, dynamic>)['pinned'] ?? false;
-          if (isPinnedA != isPinnedB) {
-            return isPinnedA ? -1 : 1;
-          }
-          Timestamp timestampA = (a.data() as Map<String, dynamic>)['timestamp'] ?? Timestamp.now();
-          Timestamp timestampB = (b.data() as Map<String, dynamic>)['timestamp'] ?? Timestamp.now();
-          return timestampB.compareTo(timestampA);
-        });
-
-        return Column(
-          children: [
-            _buildTagFilter(allTags.toList()),
-            Expanded(
-              child: filteredDocs.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.search_off, size: 64, color: Colors.grey),
-                          SizedBox(height: 16),
-                          Text(
-                            'No ${_currentView == 'notes' ? 'notes' : _currentView == 'archive' ? 'archived notes' : 'items in trash'} found',
-                            style: TextStyle(fontSize: 18, color: Colors.grey),
-                          ),
-                          if (_selectedTags.isNotEmpty || _selectedColor != null)
-                            TextButton(
-                              onPressed: () {
-                                setState(() {
-                                  _selectedTags.clear();
-                                  _selectedColor = null;
-                                });
-                              },
-                              child: Text('Clear filters'),
-                            ),
-                        ],
-                      ),
-                    )
-                  : MasonryGridView.count(
-                      crossAxisCount: 2,
-                      itemCount: filteredDocs.length,
-                      itemBuilder: (context, index) {
-                        Map<String, dynamic> data =
-                            filteredDocs[index].data() as Map<String, dynamic>;
-                        Color noteColor = Color(data['color'] ?? Colors.white.value);
-                        Color textColor = getTextColor(noteColor);
-                        bool isPinned = data['pinned'] ?? false;
-                        return GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => NoteDetailScreen(
-                                  note: data,
-                                  noteId: filteredDocs[index].id,
-                                ),
-                              ),
-                            );
-                          },
-                          onLongPress: () {
-                            _showNoteOptions(context, filteredDocs[index].id, data);
-                          },
-                          child: Card(
-                            elevation: 4,
-                            margin: EdgeInsets.all(8),
-                            color: noteColor,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Padding(
-                              padding: EdgeInsets.all(12),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  if (isPinned && _currentView == 'notes')
-                                    Align(
-                                      alignment: Alignment.topRight,
-                                      child: Icon(
-                                        Icons.push_pin,
-                                        color: textColor,
-                                        size: 20,
-                                      ),
-                                    ),
-                                  Text(
-                                    data['title'] ?? 'No Title',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: textColor,
-                                      fontSize: 18,
-                                    ),
-                                  ),
-                                  SizedBox(height: 8),
-                                  Text(
-                                    data['content'] ?? 'No Content',
-                                    maxLines: 5,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(color: textColor),
-                                  ),
-                                  SizedBox(height: 8),
-                                  Wrap(
-                                    spacing: 4,
-                                    runSpacing: 4,
-                                    children: (data['tags'] as List<dynamic>? ?? [])
-                                        .map<Widget>((tag) {
-                                      return Chip(
-                                        label: Text(tag, style: TextStyle(fontSize: 10)),
-                                        backgroundColor: Theme.of(context)
-                                            .primaryColor
-                                            .withOpacity(0.1),
-                                        padding: EdgeInsets.all(4),
-                                        materialTapTargetSize:
-                                            MaterialTapTargetSize.shrinkWrap,
-                                      );
-                                    }).toList(),
-                                  ),
-                                  if (_currentView == 'trash')
-                                    Text(
-                                      'Deleted on: ${_formatDate(data['trashDate'])}',
-                                      style: TextStyle(
-                                        color: textColor.withOpacity(0.7),
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
+            ListTile(
+              leading: Icon(Icons.note),
+              title: Text('Notes'),
+              onTap: () {
+                setState(() {
+                  _currentView = 'notes';
+                });
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.lock),
+              title: Text('Locked Notes'),
+              onTap: () {
+                Navigator.pop(context);
+                _showPinDialog();
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.archive),
+              title: Text('Archive'),
+              onTap: () {
+                setState(() {
+                  _currentView = 'archive';
+                });
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.delete),
+              title: Text('Trash'),
+              onTap: () {
+                setState(() {
+                  _currentView = 'trash';
+                });
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.share),
+              title: Text('Share App'),
+              onTap: () {
+                _launchgitUrl();
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.lock_reset),
+              title: Text('Reset Locked Notes PIN'),
+              onTap: () {
+                Navigator.pop(context);
+                _resetPin();
+              },
+            ),
+            Divider(),
+            ListTile(
+              leading: Icon(Icons.logout),
+              title: Text('Logout'),
+              onTap: () {
+                Navigator.pop(context);
+                _showLogoutConfirmationDialog();
+              },
             ),
           ],
-        );
-      },
-    ),
-    floatingActionButton: _currentView == 'notes'
-        ? ScaleTransition(
-            scale: _fabAnimation,
-            child: FloatingActionButton.extended(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => AddNoteScreen()),
-                );
-              },
-              icon: Icon(Icons.add),
-              label: Text('Add Note'),
-            ),
-          )
-        : null,
-  );
-}
+        ),
+      ),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .collection('notes')
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return Center(child: Text('Something went wrong'));
+          }
+
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(child: CircularProgressIndicator());
+          }
+
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.note_add, size: 100, color: Colors.grey),
+                  SizedBox(height: 20),
+                  Text(
+                    'No notes yet. Add your first note!',
+                    style: TextStyle(fontSize: 18, color: Colors.grey),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          var allDocs = snapshot.data!.docs;
+          Set<String> allTags = Set<String>();
+
+          var filteredDocs = allDocs.where((doc) {
+            Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+            List<String> noteTags = List<String>.from(data['tags'] ?? []);
+
+            allTags.addAll(noteTags);
+
+            // Add this condition to filter out locked notes
+            if (data['isLocked'] == true) return false;
+
+            bool matchesSearch = data['title']
+                    .toString()
+                    .toLowerCase()
+                    .contains(_searchQuery) ||
+                data['content'].toString().toLowerCase().contains(_searchQuery);
+
+            bool matchesTags = _selectedTags.isEmpty ||
+                _selectedTags.every((tag) => noteTags.contains(tag));
+
+            bool matchesColor = _selectedColor == null ||
+                Color(data['color'] ?? Colors.white.value) == _selectedColor;
+
+            bool matchesView = (_currentView == 'notes' &&
+                    !(data['archived'] ?? false) &&
+                    !(data['inTrash'] ?? false)) ||
+                (_currentView == 'archive' && (data['archived'] ?? false)) ||
+                (_currentView == 'trash' && (data['inTrash'] ?? false));
+
+            return matchesSearch && matchesTags && matchesColor && matchesView;
+          }).toList();
+
+          // Sort notes
+          filteredDocs.sort((a, b) {
+            bool isPinnedA =
+                (a.data() as Map<String, dynamic>)['pinned'] ?? false;
+            bool isPinnedB =
+                (b.data() as Map<String, dynamic>)['pinned'] ?? false;
+            if (isPinnedA != isPinnedB) {
+              return isPinnedA ? -1 : 1;
+            }
+            Timestamp timestampA =
+                (a.data() as Map<String, dynamic>)['timestamp'] ??
+                    Timestamp.now();
+            Timestamp timestampB =
+                (b.data() as Map<String, dynamic>)['timestamp'] ??
+                    Timestamp.now();
+            return timestampB.compareTo(timestampA);
+          });
+
+          return Column(
+            children: [
+              _buildTagFilter(allTags.toList()),
+              Expanded(
+                child: filteredDocs.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.search_off,
+                                size: 64, color: Colors.grey),
+                            SizedBox(height: 16),
+                            Text(
+                              'No ${_currentView == 'notes' ? 'notes' : _currentView == 'archive' ? 'archived notes' : 'items in trash'} found',
+                              style:
+                                  TextStyle(fontSize: 18, color: Colors.grey),
+                            ),
+                            if (_selectedTags.isNotEmpty ||
+                                _selectedColor != null)
+                              TextButton(
+                                onPressed: () {
+                                  setState(() {
+                                    _selectedTags.clear();
+                                    _selectedColor = null;
+                                  });
+                                },
+                                child: Text('Clear filters'),
+                              ),
+                          ],
+                        ),
+                      )
+                    : MasonryGridView.count(
+                        crossAxisCount: 2,
+                        itemCount: filteredDocs.length,
+                        itemBuilder: (context, index) {
+                          Map<String, dynamic> data = filteredDocs[index].data()
+                              as Map<String, dynamic>;
+                          Color noteColor =
+                              Color(data['color'] ?? Colors.white.value);
+                          Color textColor = getTextColor(noteColor);
+                          bool isPinned = data['pinned'] ?? false;
+                          return GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => NoteDetailScreen(
+                                    note: data,
+                                    noteId: filteredDocs[index].id,
+                                  ),
+                                ),
+                              );
+                            },
+                            onLongPress: () {
+                              _showNoteOptions(
+                                  context, filteredDocs[index].id, data);
+                            },
+                            child: Card(
+                              elevation: 4,
+                              margin: EdgeInsets.all(8),
+                              color: noteColor,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Padding(
+                                padding: EdgeInsets.all(12),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    if (isPinned && _currentView == 'notes')
+                                      Align(
+                                        alignment: Alignment.topRight,
+                                        child: Icon(
+                                          Icons.push_pin,
+                                          color: textColor,
+                                          size: 20,
+                                        ),
+                                      ),
+                                    Text(
+                                      data['title'] ?? 'No Title',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: textColor,
+                                        fontSize: 18,
+                                      ),
+                                    ),
+                                    SizedBox(height: 8),
+                                    Text(
+                                      data['content'] ?? 'No Content',
+                                      maxLines: 5,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(color: textColor),
+                                    ),
+                                    SizedBox(height: 8),
+                                    Wrap(
+                                      spacing: 4,
+                                      runSpacing: 4,
+                                      children:
+                                          (data['tags'] as List<dynamic>? ?? [])
+                                              .map<Widget>((tag) {
+                                        return Chip(
+                                          label: Text(tag,
+                                              style: TextStyle(fontSize: 10)),
+                                          backgroundColor: Theme.of(context)
+                                              .primaryColor
+                                              .withOpacity(0.1),
+                                          padding: EdgeInsets.all(4),
+                                          materialTapTargetSize:
+                                              MaterialTapTargetSize.shrinkWrap,
+                                        );
+                                      }).toList(),
+                                    ),
+                                    if (_currentView == 'trash')
+                                      Text(
+                                        'Deleted on: ${_formatDate(data['trashDate'])}',
+                                        style: TextStyle(
+                                          color: textColor.withOpacity(0.7),
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+              ),
+            ],
+          );
+        },
+      ),
+      floatingActionButton: _currentView == 'notes'
+          ? ScaleTransition(
+              scale: _fabAnimation,
+              child: FloatingActionButton.extended(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => AddNoteScreen()),
+                  );
+                },
+                icon: Icon(Icons.add),
+                label: Text('Add Note'),
+              ),
+            )
+          : null,
+    );
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();

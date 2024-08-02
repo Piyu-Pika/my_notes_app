@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_gemini/flutter_gemini.dart';
-import 'package:my_notes_app/Screens/SignUpPage.dart';
+import 'package:my_notes_app/Auth/SignUpPage.dart';
 import 'package:my_notes_app/Screens/notesScreen.dart';
 import 'package:my_notes_app/key.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -107,6 +107,7 @@ class _MyAppState extends State<MyApp> {
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.blue[700],
+            foregroundColor: Colors.black,
             padding: EdgeInsets.symmetric(horizontal: 50, vertical: 15),
             textStyle: TextStyle(
               fontSize: 18,
