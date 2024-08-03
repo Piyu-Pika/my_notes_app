@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:my_notes_app/Auth/ResetPin';
+import 'package:my_notes_app/Auth/ResetPin.dart';
 import 'package:my_notes_app/Screens/LockedNotes.dart';
 import 'package:my_notes_app/Screens/NoteAddScreen.dart';
 import 'package:my_notes_app/Screens/NotesDetailsScreen.dart';
@@ -9,6 +9,9 @@ import 'package:my_notes_app/Screens/NoteEditScreen.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:animated_text_kit/animated_text_kit.dart';
+import 'package:firebase_remote_config/firebase_remote_config.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class NotesScreen extends StatefulWidget {
   final Function toggleTheme;
@@ -666,6 +669,81 @@ class _NotesScreenState extends State<NotesScreen>
     );
   }
 
+  Future<void> checkForUpdates() async {
+    final remoteConfig = FirebaseRemoteConfig.instance;
+    await remoteConfig.fetchAndActivate();
+
+    final updateAvailable = remoteConfig.getBool('is_update_available');
+    final minimumVersion =
+        remoteConfig.getString('minimum_version').replaceAll('"', '');
+    final updateUrl = remoteConfig.getString('update_url');
+
+    final packageInfo = await PackageInfo.fromPlatform();
+    final currentVersion = packageInfo.version;
+
+    if (updateAvailable &&
+        _isVersionLowerThan(currentVersion, minimumVersion)) {
+      showUpdateDialog(minimumVersion, updateUrl);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Your app is up to date.')),
+      );
+    }
+  }
+
+  bool _isVersionLowerThan(String currentVersion, String minimumVersion) {
+    List<int> current = currentVersion.split('.').map(int.parse).toList();
+    List<int> minimum = minimumVersion.split('.').map(int.parse).toList();
+
+    for (int i = 0; i < 3; i++) {
+      if (current[i] < minimum[i]) return true;
+      if (current[i] > minimum[i]) return false;
+    }
+    return false;
+  }
+
+  void showUpdateDialog(String minimumVersion, String updateUrl) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Update Available'),
+          content: Text(
+              'A new version ($minimumVersion) is available. Would you like to update?'),
+          actions: <Widget>[
+            TextButton(
+              child: Text('Later'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+                child: Text('Update'),
+                onPressed: () async {
+                  final Uri uri = Uri.parse(updateUrl);
+                  try {
+                    if (await canLaunchUrl(uri)) {
+                      await launchUrl(uri,
+                          mode: LaunchMode.externalApplication);
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Could not open download page')),
+                      );
+                      print(updateUrl);
+                    }
+                    Navigator.of(context).pop();
+                  } catch (e) {
+                    print('Error launching URL: $e');
+                  }
+                  ;
+                }),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser!;
@@ -782,6 +860,14 @@ class _NotesScreenState extends State<NotesScreen>
                   _currentView = 'trash';
                 });
                 Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.update),
+              title: Text('Check for Updates'),
+              onTap: () {
+                Navigator.pop(context);
+                checkForUpdates();
               },
             ),
             ListTile(

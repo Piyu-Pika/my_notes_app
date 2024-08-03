@@ -17,6 +17,19 @@ A sleek and intuitive note-taking application created using Flutter and Firebase
 - 📊 Staggered grid view for dynamic note display
 - 🖌️ Color filter for easy note browsing
 - 📱 Responsive design for various screen sizes
+- 🔑 Reset PIN feature for locked notes
+- 🔄 Automatic app update checks using Firebase Remote Config
+
+## 🔐 Security Features
+- **Locked Notes**: Secure your sensitive notes with a 4-digit PIN
+- **PIN Reset**: Easily reset your PIN if forgotten, with email verification for added security
+- **Auto-lock**: Locked notes are automatically hidden from the main view
+
+## 🔄 App Updates
+- Now you can check for updates using Firebase Remote Config
+- Seamless update process with in-app prompts
+- Ensures users always have the latest features and security improvements
+- you can the latest version form the github
 
 ## 🤖 AI Features
 - **AI Title Generator**: Automatically generate catchy and relevant titles for your notes using Google Gemini AI
@@ -40,6 +53,7 @@ A sleek and intuitive note-taking application created using Flutter and Firebase
 - 📱 Flutter for cross-platform development
 - 🔑 Firebase Authentication for secure user management
 - 🗄️ Firebase Firestore for real-time data storage
+- 🔄 Firebase Remote Config for dynamic app updates
 - 🤖 Google Gemini for AI-powered features
 - 📊 flutter_staggered_grid_view for dynamic note layouts
 - 🎭 animated_text_kit for engaging text animations
@@ -56,6 +70,7 @@ A sleek and intuitive note-taking application created using Flutter and Firebase
    - Add your Flutter app to the Firebase project
    - Download and add the configuration files to the appropriate directory
    - Enable Authentication and Firestore in your Firebase console
+   - Set up Remote Config for app updates
 4. 🤖 Set up Google Gemini
    - Obtain an API key for Google Gemini
    - Add the API key to your `key.dart` file (ensure it's kept secure and not exposed in public repositories)
@@ -76,6 +91,9 @@ A sleek and intuitive note-taking application created using Flutter and Firebase
 - 🗂️ Archive notes you don't need frequently
 - 🗑️ Move notes to trash and restore them if needed
 - 🎨 Use color filters to browse notes by category
+- 🔐 Set a PIN to lock sensitive notes
+- 🔑 Reset your PIN if forgotten, using email verification
+- 🔄 Receive prompts for app updates when available
 
 ## 🆕 UI Enhancements
 - Color-coded notes for easy visual categorization

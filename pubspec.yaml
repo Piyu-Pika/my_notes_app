@@ -53,6 +53,9 @@ dependencies:
   share_plus: ^9.0.0
   flutter_colorpicker: ^1.1.0
   home_widget: ^0.6.0
+  firebase_remote_config: ^5.0.4
+  flutter_localizations:
+    sdk: flutter
 
 dev_dependencies:
   flutter_launcher_icons: "^0.13.1"
