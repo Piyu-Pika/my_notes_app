@@ -75,6 +75,7 @@ class _NotesScreenState extends State<NotesScreen>
               onPressed: () {
                 Navigator.of(context).pop();
                 FirebaseAuth.instance.signOut();
+                setState(() {});
               },
             ),
           ],
@@ -756,8 +757,7 @@ class _NotesScreenState extends State<NotesScreen>
                   hintText: 'Search notes...',
                   border: InputBorder.none,
                   hintStyle: TextStyle(
-                      color:
-                          widget.isDarkMode ? Colors.white70 : Colors.black54),
+                      color: widget.isDarkMode ? Colors.white : Colors.black54),
                 ),
                 style: TextStyle(
                     color: widget.isDarkMode ? Colors.white : Colors.black),
