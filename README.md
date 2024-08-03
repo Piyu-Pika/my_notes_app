@@ -47,7 +47,8 @@ A sleek and intuitive note-taking application created using Flutter and Firebase
 - **Auto-deletion**: Notes in the trash are automatically deleted after 30 days
 
 ## 📸 Screenshots
-![My_Notes_app](https://github.com/user-attachments/assets/872a77f1-eded-4b97-9f0a-5053d8dd00e1)
+![Main image](https://github.com/user-attachments/assets/f445b58c-2fb3-4cd2-81bf-fa076af234c2)
+
 
 ## 🛠️ Technologies Used
 - 📱 Flutter for cross-platform development
