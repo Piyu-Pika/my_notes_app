@@ -7,10 +7,10 @@ import 'package:my_notes_app/Screens/NoteAddScreen.dart';
 import 'package:my_notes_app/Screens/NotesDetailsScreen.dart';
 import 'package:my_notes_app/Screens/NoteEditScreen.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
-import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class NotesScreen extends StatefulWidget {
@@ -45,7 +45,6 @@ class _NotesScreenState extends State<NotesScreen>
       curve: Curves.easeInOut,
     );
     _startPeriodicCleanup();
-    _checkPinExists();
   }
 
   @override
@@ -54,8 +53,18 @@ class _NotesScreenState extends State<NotesScreen>
     super.dispose();
   }
 
-  Future<void> _launchgitUrl() async {
-    Uri.parse('https://github.com/Piyu-Pika/my_notes_app');
+  Future<void> _shareGitHubLink() async {
+    const String githubUrl = 'https://github.com/Piyu-Pika/my_notes_app';
+    const String message = "I'm using the My Notes app. Give it a try!";
+
+    final String shareText = '$message\n\n$githubUrl';
+
+    try {
+      await Share.share(shareText, subject: 'Check out My Notes app');
+    } catch (e) {
+      print('Error sharing: $e');
+      // Handle the error as needed, perhaps show a snackbar or dialog to the user
+    }
   }
 
   void _showLogoutConfirmationDialog() {
@@ -183,6 +192,7 @@ class _NotesScreenState extends State<NotesScreen>
         .doc(noteId)
         .update({
       'inTrash': true,
+      'archived': false,
       'trashDate': FieldValue.serverTimestamp(),
     }).then((_) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -217,6 +227,34 @@ class _NotesScreenState extends State<NotesScreen>
   }
 
   void _deleteNotePermanently(String noteId) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Confirm Deletion'),
+          content:
+              Text('Are you sure you want to permanently delete this note?'),
+          actions: <Widget>[
+            TextButton(
+              child: Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop(); // Dismiss the dialog
+              },
+            ),
+            TextButton(
+              child: Text('Delete'),
+              onPressed: () {
+                Navigator.of(context).pop(); // Dismiss the dialog
+                _performDeletion(noteId);
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _performDeletion(String noteId) {
     final user = FirebaseAuth.instance.currentUser!;
     FirebaseFirestore.instance
         .collection('users')
@@ -467,13 +505,13 @@ class _NotesScreenState extends State<NotesScreen>
         .collection('users')
         .doc(user.uid)
         .get();
-
     if (!docSnapshot.exists ||
         !docSnapshot.data()!.containsKey('lockedNotesPin')) {
       // Document doesn't exist or PIN doesn't exist, prompt user to create one
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _showCreatePinDialog();
-      });
+      _showCreatePinDialog();
+    } else {
+      // Document and PIN exist, show PIN dialog
+      _showPinDialog();
     }
   }
 
@@ -481,6 +519,7 @@ class _NotesScreenState extends State<NotesScreen>
     String enteredPin = '';
     String confirmedPin = '';
     bool isConfirming = false;
+    bool obscureText = true;
 
     showDialog(
       context: context,
@@ -488,22 +527,48 @@ class _NotesScreenState extends State<NotesScreen>
       builder: (BuildContext context) {
         return StatefulBuilder(builder: (context, setState) {
           return AlertDialog(
-            title: Text(isConfirming ? 'Confirm PIN' : 'Create PIN'),
-            content: TextField(
-              keyboardType: TextInputType.number,
-              maxLength: 4,
-              obscureText: true,
-              onChanged: (value) {
-                if (isConfirming) {
-                  confirmedPin = value;
-                } else {
-                  enteredPin = value;
-                }
-              },
-              decoration: InputDecoration(
-                hintText:
-                    isConfirming ? 'Confirm 4-digit PIN' : 'Enter 4-digit PIN',
-              ),
+            title: Text(
+              isConfirming ? 'Confirm PIN' : 'Create PIN',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  isConfirming
+                      ? 'Please re-enter your PIN to confirm'
+                      : 'Create a secure 4-digit PIN',
+                  style: TextStyle(fontSize: 16),
+                ),
+                SizedBox(height: 20),
+                TextField(
+                  key: ValueKey(isConfirming), // Forces recreation of TextField
+                  keyboardType: TextInputType.number,
+                  maxLength: 4,
+                  obscureText: obscureText,
+                  onChanged: (value) {
+                    if (isConfirming) {
+                      confirmedPin = value;
+                    } else {
+                      enteredPin = value;
+                    }
+                  },
+                  decoration: InputDecoration(
+                    hintText: isConfirming ? 'Confirm PIN' : 'Enter PIN',
+                    border: OutlineInputBorder(),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        obscureText ? Icons.visibility_off : Icons.visibility,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          obscureText = !obscureText;
+                        });
+                      },
+                    ),
+                  ),
+                ),
+              ],
             ),
             actions: <Widget>[
               TextButton(
@@ -512,7 +577,7 @@ class _NotesScreenState extends State<NotesScreen>
                   Navigator.of(context).pop();
                 },
               ),
-              TextButton(
+              ElevatedButton(
                 child: Text(isConfirming ? 'Confirm' : 'Next'),
                 onPressed: () {
                   if (isConfirming) {
@@ -522,8 +587,9 @@ class _NotesScreenState extends State<NotesScreen>
                     } else {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                            content:
-                                Text('PINs do not match. Please try again.')),
+                          content: Text('PINs do not match. Please try again.'),
+                          backgroundColor: Colors.red,
+                        ),
                       );
                       setState(() {
                         isConfirming = false;
@@ -537,7 +603,10 @@ class _NotesScreenState extends State<NotesScreen>
                       });
                     } else {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Please enter a 4-digit PIN.')),
+                        SnackBar(
+                          content: Text('Please enter a 4-digit PIN.'),
+                          backgroundColor: Colors.orange,
+                        ),
                       );
                     }
                   }
@@ -564,38 +633,76 @@ class _NotesScreenState extends State<NotesScreen>
 
   void _showPinDialog() {
     String enteredPin = '';
+    bool obscureText = true;
+
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Enter PIN'),
-          content: TextField(
-            keyboardType: TextInputType.number,
-            maxLength: 4,
-            obscureText: true,
-            onChanged: (value) {
-              enteredPin = value;
-            },
-            decoration: InputDecoration(
-              hintText: 'Enter 4-digit PIN',
+        return StatefulBuilder(builder: (context, setState) {
+          return AlertDialog(
+            title: Text(
+              'Enter PIN',
+              style: TextStyle(fontWeight: FontWeight.bold),
             ),
-          ),
-          actions: <Widget>[
-            TextButton(
-              child: Text('Cancel'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Please enter your 4-digit PIN',
+                  style: TextStyle(fontSize: 16),
+                ),
+                SizedBox(height: 20),
+                TextField(
+                  keyboardType: TextInputType.number,
+                  maxLength: 4,
+                  obscureText: obscureText,
+                  onChanged: (value) {
+                    enteredPin = value;
+                  },
+                  decoration: InputDecoration(
+                    hintText: 'Enter PIN',
+                    border: OutlineInputBorder(),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        obscureText ? Icons.visibility_off : Icons.visibility,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          obscureText = !obscureText;
+                        });
+                      },
+                    ),
+                  ),
+                ),
+              ],
             ),
-            TextButton(
-              child: Text('Enter'),
-              onPressed: () {
-                Navigator.of(context).pop();
-                _verifyPin(enteredPin);
-              },
-            ),
-          ],
-        );
+            actions: <Widget>[
+              TextButton(
+                child: Text('Cancel'),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+              ),
+              ElevatedButton(
+                child: Text('Enter'),
+                onPressed: () {
+                  if (enteredPin.length == 4) {
+                    Navigator.of(context).pop();
+                    _verifyPin(enteredPin);
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Please enter a 4-digit PIN.'),
+                        backgroundColor: Colors.orange,
+                      ),
+                    );
+                  }
+                },
+              ),
+            ],
+          );
+        });
       },
     );
   }
@@ -838,8 +945,9 @@ class _NotesScreenState extends State<NotesScreen>
               leading: Icon(Icons.lock),
               title: Text('Locked Notes'),
               onTap: () {
+                _checkPinExists();
                 Navigator.pop(context);
-                _showPinDialog();
+                //_showPinDialog();
               },
             ),
             ListTile(
@@ -874,7 +982,7 @@ class _NotesScreenState extends State<NotesScreen>
               leading: Icon(Icons.share),
               title: Text('Share App'),
               onTap: () {
-                _launchgitUrl();
+                _shareGitHubLink();
                 Navigator.pop(context);
               },
             ),

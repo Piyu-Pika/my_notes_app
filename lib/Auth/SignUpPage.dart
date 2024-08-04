@@ -96,7 +96,7 @@ Feel free to delete this note once you're familiar with the app. Happy note-taki
             begin: Alignment.topRight,
             end: Alignment.bottomLeft,
             colors: widget.isDarkMode
-                ? [Colors.grey[800]!, Colors.grey[600]!]
+                ? [Colors.blue[100]!, Colors.blue[400]!]
                 : [Colors.blue[100]!, Colors.blue[400]!],
           ),
         ),
