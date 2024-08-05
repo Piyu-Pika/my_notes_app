@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -20,6 +22,7 @@ class NoteDetailScreen extends StatefulWidget {
 
 class _NoteDetailScreenState extends State<NoteDetailScreen> {
   late Map<String, dynamic> _note;
+  late StreamSubscription<DocumentSnapshot> _noteSubscription;
 
   final List<Color> _colorOptions = [
     Colors.white,
@@ -34,6 +37,29 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
   void initState() {
     super.initState();
     _note = Map<String, dynamic>.from(widget.note);
+    _listenToNoteChanges();
+  }
+
+  void _listenToNoteChanges() {
+    final user = FirebaseAuth.instance.currentUser!;
+    _noteSubscription = FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('notes')
+        .doc(widget.noteId)
+        .snapshots()
+        .listen((snapshot) {
+      if (snapshot.exists) {
+        setState(() {
+          _note = snapshot.data()!;
+        });
+      }
+    });
+    @override
+    void dispose() {
+      _noteSubscription.cancel();
+      super.dispose();
+    }
   }
 
   Future<void> _launchUrl(String url) async {
@@ -278,9 +304,16 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
         builder: (context) => NoteChatScreen(
           noteContent: _note['content'],
           noteTitle: _note['title'],
+          noteId: widget.noteId,
         ),
       ),
-    );
+    ).then((updatedNote) {
+      if (updatedNote != null) {
+        setState(() {
+          _note = updatedNote;
+        });
+      }
+    });
   }
 
   void _editNote(BuildContext context) {

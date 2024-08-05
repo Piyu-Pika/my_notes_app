@@ -2,16 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gemini/flutter_gemini.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:convert';
 
 class NoteChatScreen extends StatefulWidget {
   final String noteContent;
   final String noteTitle;
+  final String noteId;
 
   const NoteChatScreen({
     Key? key,
     required this.noteContent,
     required this.noteTitle,
+    required this.noteId,
   }) : super(key: key);
 
   @override
@@ -24,11 +28,28 @@ class _NoteChatScreenState extends State<NoteChatScreen> {
   final gemini = Gemini.instance;
   List<ChatMessage> _messages = [];
   bool _isLoading = false;
+  bool _showCommands = false;
+  final List<String> _commands = ['/edit', '/update', '/rewrite', '/addemoji'];
+  String? _lastPrompt;
 
   @override
   void initState() {
     super.initState();
     _loadMessages();
+    _textController.addListener(_onTextChanged);
+  }
+
+  @override
+  void dispose() {
+    _textController.removeListener(_onTextChanged);
+    _textController.dispose();
+    super.dispose();
+  }
+
+  void _onTextChanged() {
+    setState(() {
+      _showCommands = _textController.text == '/';
+    });
   }
 
   Future<void> _loadMessages() async {
@@ -67,30 +88,62 @@ class _NoteChatScreenState extends State<NoteChatScreen> {
   Future<void> _sendMessage() async {
     if (_textController.text.isEmpty) return;
 
+    String userInput = _textController.text;
     setState(() {
       _messages.add(
         ChatMessage(
-          text: _textController.text,
+          text: userInput,
           isUser: true,
         ),
       );
       _isLoading = true;
       _textController.clear();
+      _showCommands = false;
     });
 
     _scrollToBottom();
     _saveMessages();
 
-    String prompt = '''
-    Based on the following note content:
-    ${widget.noteContent}
-    
-    Please respond to this user query:
-    ${_textController.text}
-    
-    Respond as if you're an AI assistant discussing this note.
-    you can also use the internet information if needed or the information not in the notes itself
-    ''';
+    String prompt;
+    bool isEditing = false;
+    if (userInput.startsWith('/')) {
+      String command = userInput.split(' ')[0].toLowerCase();
+      String restOfInput = userInput.substring(command.length).trim();
+      switch (command) {
+        case '/edit':
+        case '/update':
+        case '/rewrite':
+        case '/addemoji':
+          isEditing = true;
+          prompt =
+              '$command the following note content based on this instruction: $restOfInput\n\nOriginal content:\n${widget.noteContent}';
+          break;
+        default:
+          prompt = '''
+          Based on the following note content:
+          ${widget.noteContent}
+          
+          Please respond to this user query:
+          $userInput
+          
+          Respond as if you're an AI assistant discussing this note.
+          You can also use internet information if needed or information not in the notes itself.
+          ''';
+      }
+    } else {
+      prompt = '''
+      Based on the following note content:
+      ${widget.noteContent}
+      
+      Please respond to this user query:
+      $userInput
+      
+      Respond as if you're an AI assistant discussing this note.
+      You can also use internet information if needed or information not in the notes itself.
+      ''';
+    }
+
+    _lastPrompt = prompt;
 
     try {
       final response = await gemini.text(prompt);
@@ -99,6 +152,81 @@ class _NoteChatScreenState extends State<NoteChatScreen> {
           text: response?.content?.parts?.last.text ??
               'Sorry, I could not process that.',
           isUser: false,
+          showActions: isEditing,
+          onConfirm: () => _updateNoteInFirebase(_messages.last.text),
+          onReject: () => _removeLastMessage(),
+          onRetry: () => _retryLastPrompt(),
+        ));
+        _isLoading = false;
+      });
+      _saveMessages();
+    } catch (e) {
+      setState(() {
+        _messages.add(ChatMessage(
+          text: 'An error occurred. Please try again.',
+          isUser: false,
+        ));
+        _isLoading = false;
+      });
+      _saveMessages();
+    }
+
+    _scrollToBottom();
+  }
+
+  void _updateNoteInFirebase(String newContent) async {
+    final user = FirebaseAuth.instance.currentUser!;
+    try {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('notes')
+          .doc(widget.noteId)
+          .update({
+        'content': newContent,
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Note updated successfully')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to update note: $e')),
+      );
+    }
+  }
+
+  void _removeLastMessage() {
+    setState(() {
+      _messages.removeLast();
+    });
+    _saveMessages();
+  }
+
+  void _retryLastPrompt() {
+    if (_lastPrompt != null) {
+      _removeLastMessage();
+      _sendMessageWithPrompt(_lastPrompt!);
+    }
+  }
+
+  Future<void> _sendMessageWithPrompt(String prompt) async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final response = await gemini.text(prompt);
+      setState(() {
+        _messages.add(ChatMessage(
+          text: response?.content?.parts?.last.text ??
+              'Sorry, I could not process that.',
+          isUser: false,
+          showActions: true,
+          onConfirm: () => _updateNoteInFirebase(_messages.last.text),
+          onReject: () => _removeLastMessage(),
+          onRetry: () => _retryLastPrompt(),
         ));
         _isLoading = false;
       });
@@ -154,6 +282,28 @@ class _NoteChatScreenState extends State<NoteChatScreen> {
                 padding: EdgeInsets.symmetric(vertical: 8.0),
                 child: CircularProgressIndicator(),
               ),
+            if (_showCommands)
+              Container(
+                color: isDarkMode ? Colors.grey[800] : Colors.grey[200],
+                child: Column(
+                  children: _commands
+                      .map((command) => ListTile(
+                            title: Text(command),
+                            onTap: () {
+                              setState(() {
+                                _textController.text = command + ' ';
+                                _textController.selection =
+                                    TextSelection.fromPosition(
+                                  TextPosition(
+                                      offset: _textController.text.length),
+                                );
+                                _showCommands = false;
+                              });
+                            },
+                          ))
+                      .toList(),
+                ),
+              ),
             Container(
               decoration: BoxDecoration(
                 color: isDarkMode ? Colors.grey[900] : Colors.grey[100],
@@ -173,7 +323,7 @@ class _NoteChatScreenState extends State<NoteChatScreen> {
                       child: TextField(
                         controller: _textController,
                         decoration: InputDecoration(
-                          hintText: 'Ask about your note...',
+                          hintText: 'Ask about your note or use /commands...',
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(25.0),
                             borderSide: BorderSide.none,
@@ -219,19 +369,31 @@ class _NoteChatScreenState extends State<NoteChatScreen> {
 class ChatMessage extends StatelessWidget {
   final String text;
   final bool isUser;
+  final bool showActions;
+  final VoidCallback? onConfirm;
+  final VoidCallback? onReject;
+  final VoidCallback? onRetry;
 
-  const ChatMessage({Key? key, required this.text, required this.isUser})
-      : super(key: key);
+  const ChatMessage({
+    Key? key,
+    required this.text,
+    required this.isUser,
+    this.showActions = false,
+    this.onConfirm,
+    this.onReject,
+    this.onRetry,
+  }) : super(key: key);
 
-  // Add these methods for JSON serialization
   Map<String, dynamic> toJson() => {
         'text': text,
         'isUser': isUser,
+        'showActions': showActions,
       };
 
   factory ChatMessage.fromJson(Map<String, dynamic> json) => ChatMessage(
         text: json['text'],
         isUser: json['isUser'],
+        showActions: json['showActions'] ?? false,
       );
 
   @override
@@ -243,43 +405,74 @@ class ChatMessage extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-      child: Row(
-        mainAxisAlignment:
-            isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Column(
+        crossAxisAlignment:
+            isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
         children: [
-          if (!isUser) ...[
-            CircleAvatar(
-              backgroundColor: Theme.of(context).colorScheme.secondary,
-              child: const Icon(Icons.assistant, color: Colors.white),
-            ),
-            const SizedBox(width: 8),
-          ],
-          Flexible(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              decoration: BoxDecoration(
-                color: isUser ? userBubbleColor : aiBubbleColor,
-                borderRadius: BorderRadius.only(
-                  topLeft: const Radius.circular(16),
-                  topRight: const Radius.circular(16),
-                  bottomLeft: Radius.circular(isUser ? 16 : 0),
-                  bottomRight: Radius.circular(isUser ? 0 : 16),
+          Row(
+            mainAxisAlignment:
+                isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (!isUser) ...[
+                CircleAvatar(
+                  backgroundColor: Theme.of(context).colorScheme.secondary,
+                  child: const Icon(Icons.assistant, color: Colors.white),
+                ),
+                const SizedBox(width: 8),
+              ],
+              Flexible(
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: isUser ? userBubbleColor : aiBubbleColor,
+                    borderRadius: BorderRadius.only(
+                      topLeft: const Radius.circular(16),
+                      topRight: const Radius.circular(16),
+                      bottomLeft: Radius.circular(isUser ? 16 : 0),
+                      bottomRight: Radius.circular(isUser ? 0 : 16),
+                    ),
+                  ),
+                  child: Text(
+                    text,
+                    style: TextStyle(color: textColor),
+                  ),
                 ),
               ),
-              child: Text(
-                text,
-                style: TextStyle(color: textColor),
+              if (isUser) ...[
+                const SizedBox(width: 8),
+                CircleAvatar(
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  child: const Icon(Icons.person, color: Colors.white),
+                ),
+              ],
+            ],
+          ),
+          if (showActions && !isUser)
+            Padding(
+              padding: const EdgeInsets.only(top: 8.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.check, color: Colors.green),
+                    onPressed: onConfirm,
+                    tooltip: 'Confirm',
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.red),
+                    onPressed: onReject,
+                    tooltip: 'Reject',
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.refresh, color: Colors.blue),
+                    onPressed: onRetry,
+                    tooltip: 'Retry',
+                  ),
+                ],
               ),
             ),
-          ),
-          if (isUser) ...[
-            const SizedBox(width: 8),
-            CircleAvatar(
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              child: const Icon(Icons.person, color: Colors.white),
-            ),
-          ],
         ],
       ),
     );
