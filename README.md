@@ -29,11 +29,32 @@ A sleek and intuitive note-taking application created using Flutter and Firebase
 - Now you can check for updates using Firebase Remote Config
 - Seamless update process with in-app prompts
 - Ensures users always have the latest features and security improvements
-- you can the latest version form the github
+- You can get the latest version from the GitHub repository
 
 ## 🤖 AI Features
 - **AI Title Generator**: Automatically generate catchy and relevant titles for your notes using Google Gemini AI
 - **Chat with Notes**: Engage in a conversation about your notes with an AI assistant, powered by Google Gemini
+- **AI-Powered Note Manipulation**: Use special commands to modify your notes with AI assistance
+
+### New AI Commands
+Our app now includes powerful AI-driven commands to help you manipulate and enhance your notes:
+
+- **/edit**: Allows you to make specific edits to your note content using natural language instructions.
+  Example: "/edit Change the second paragraph to focus more on the benefits of exercise"
+
+- **/update**: Similar to /edit, but typically used for broader updates or additions to your note.
+  Example: "/update Add a section about the importance of staying hydrated during workouts"
+
+- **/rewrite**: Completely rewrites your note while maintaining the core message, useful for improving clarity or changing the tone.
+  Example: "/rewrite Make this note more formal and suitable for a professional report"
+
+- **/addemoji**: Enhances your note by adding relevant emojis to key points or sections.
+  Example: "/addemoji Add appropriate emojis to make this shopping list more visually appealing"
+
+- **/translate**: Translates your note content into a specified language.
+  Example: "/translate Convert this note to Spanish"
+
+To use these commands, simply type them at the beginning of your message in the chat interface, followed by your specific instruction. The AI will process your request and provide the modified note content, which you can then review, edit further, or confirm to update your original note.
 
 ## 🌈 Color Coding
 - Easily categorize and visually organize your notes with a selection of colors
@@ -48,7 +69,6 @@ A sleek and intuitive note-taking application created using Flutter and Firebase
 
 ## 📸 Screenshots
 ![Main image](https://github.com/user-attachments/assets/f445b58c-2fb3-4cd2-81bf-fa076af234c2)
-
 
 ## 🛠️ Technologies Used
 - 📱 Flutter for cross-platform development
@@ -88,6 +108,7 @@ A sleek and intuitive note-taking application created using Flutter and Firebase
 - 💾 Tap 'Save Note' to store your note
 - 🔍 Use the search functionality in the app bar to find specific notes
 - 💬 Chat with your notes to get AI-powered insights and answers
+- 🤖 Use AI commands (/edit, /update, /rewrite, /addemoji, /translate) to manipulate your notes
 - 🌓 Toggle between light and dark modes for comfortable viewing
 - 🗂️ Archive notes you don't need frequently
 - 🗑️ Move notes to trash and restore them if needed

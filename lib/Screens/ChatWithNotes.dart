@@ -29,7 +29,13 @@ class _NoteChatScreenState extends State<NoteChatScreen> {
   List<ChatMessage> _messages = [];
   bool _isLoading = false;
   bool _showCommands = false;
-  final List<String> _commands = ['/edit', '/update', '/rewrite', '/addemoji'];
+  final List<String> _commands = [
+    '/edit',
+    '/update',
+    '/rewrite',
+    '/addemoji',
+    '/translate'
+  ];
   String? _lastPrompt;
 
   @override
@@ -114,6 +120,7 @@ class _NoteChatScreenState extends State<NoteChatScreen> {
         case '/update':
         case '/rewrite':
         case '/addemoji':
+        case '/translate':
           isEditing = true;
           prompt =
               '$command the following note content based on this instruction: $restOfInput\n\nOriginal content:\n${widget.noteContent}';
@@ -457,7 +464,33 @@ class ChatMessage extends StatelessWidget {
                 children: [
                   IconButton(
                     icon: const Icon(Icons.check, color: Colors.green),
-                    onPressed: onConfirm,
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return AlertDialog(
+                            title: Text('Confirm Changes'),
+                            content: Text(
+                                'Are you sure you want to replace the previous note with these changes? This action cannot be undone.'),
+                            actions: <Widget>[
+                              TextButton(
+                                child: Text('Cancel'),
+                                onPressed: () {
+                                  Navigator.of(context).pop();
+                                },
+                              ),
+                              TextButton(
+                                child: Text('Confirm'),
+                                onPressed: () {
+                                  Navigator.of(context).pop();
+                                  onConfirm?.call();
+                                },
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                    },
                     tooltip: 'Confirm',
                   ),
                   IconButton(
