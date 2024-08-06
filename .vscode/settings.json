@@ -3,5 +3,6 @@
         "comments": "off",
         "strings": "off",
         "other": "off"
-    }
+    },
+    "cmake.ignoreCMakeListsMissing": true
 }

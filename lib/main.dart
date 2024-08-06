@@ -11,6 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+
   Gemini.init(apiKey: apikey);
   runApp(MyApp());
 }
